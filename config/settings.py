@@ -25,7 +25,10 @@ SECRET_KEY = 'django-insecure-)34^*ene$-o3c9%)n721oqbw2blj@v*8#b7u4qx&lv55jk5$2^
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+# Wide open on purpose: this app is only ever run on a trusted home LAN,
+# never exposed to the public internet (no port forwarding, no tunnels).
+# See README.md's "Run on the LAN" section for the full warning.
+ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
