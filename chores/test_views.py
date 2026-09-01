@@ -173,12 +173,12 @@ class HomeViewTests(TestCase):
         # Deterministic tie-break: alphabetical by name since due dates match.
         self.assertEqual(first_names, ["Tie A", "Tie B"])
 
-    def test_page_has_no_delete_control_for_chores(self):
+    def test_chore_row_has_delete_control(self):
         # Updated by #8: the home page now carries an add-chore form (that
         # issue's own acceptance criteria). Updated by #10: a "mark done"
         # control is now expected on each chore row too. Updated by #12:
-        # an edit control is now expected too -- only delete remains out
-        # of scope (tracked by #13).
+        # an edit control is now expected too. Updated by #13: a delete
+        # control is now expected too.
         RecurringChore.objects.create(
             name="Take out trash",
             interval_days=7,
@@ -188,7 +188,8 @@ class HomeViewTests(TestCase):
         response = self.client.get("/")
         content = response.content.decode().lower()
 
-        self.assertNotIn("delete", content)
+        self.assertIn(">delete<", content)
+        self.assertIn("hx-confirm", content)
 
     def test_chore_row_has_mark_done_control(self):
         RecurringChore.objects.create(

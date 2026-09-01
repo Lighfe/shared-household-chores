@@ -52,4 +52,9 @@ urlpatterns = [
         chores_views.cancel_edit_recurring_chore,
         name='cancel_edit_recurring_chore',
     ),
+    path(
+        'recurring-chores/<int:chore_id>/delete/',
+        chores_views.delete_recurring_chore,
+        name='delete_recurring_chore',
+    ),
 ]

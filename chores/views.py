@@ -245,6 +245,33 @@ def cancel_edit_recurring_chore(request, chore_id):
 
 
 @require_POST
+def delete_recurring_chore(request, chore_id):
+    """Permanently delete a RecurringChore (#13).
+
+    A hard delete -- no soft-delete/archive flag, per `_docs/plan.md`.
+    Unlike #11's idempotent filter-delete, this uses get_object_or_404 so
+    an id that doesn't exist (already deleted, stale/tampered) 404s
+    instead of silently succeeding, per this issue's own acceptance
+    criteria. Returns the re-rendered recurring-chores section partial --
+    not a row -- since a deleted row can't swap itself; the client
+    targets #recurring-chores with hx-swap="outerHTML", which also
+    correctly renders #5's empty state when no chores remain.
+    """
+    chore = get_object_or_404(RecurringChore, pk=chore_id)
+    chore.delete()
+
+    today = get_today()
+    chores = _get_sorted_chores(today)
+    chore_form = RecurringChoreForm()
+
+    return render(
+        request,
+        "chores/_recurring_chores_section.html",
+        {"chores": chores, "chore_form": chore_form},
+    )
+
+
+@require_POST
 def mark_one_off_task_done(request, task_id):
     """Mark a OneOffTask done by hard-deleting it (#11).
 

@@ -31,4 +31,19 @@
         hx-target="#chore-row-{{ chore.id }}"
         hx-swap="outerHTML"
     >Edit</button>
+    {# Hard delete (#13); hx-confirm blocks the request until the user #}
+    {# confirms, per the "destructive actions require confirmation" #}
+    {# decision. Targets the whole section (not this row) since the #}
+    {# deleted row can no longer swap itself, and the section partial #}
+    {# also renders #5's empty state when no chores remain. #}
+    <form
+        class="delete-chore-form"
+        hx-post="{% url 'delete_recurring_chore' chore.id %}"
+        hx-confirm="Delete this chore? This cannot be undone."
+        hx-target="#recurring-chores"
+        hx-swap="outerHTML"
+    >
+        {% csrf_token %}
+        <button type="submit">Delete</button>
+    </form>
 </li>
