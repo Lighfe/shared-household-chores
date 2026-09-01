@@ -1,9 +1,48 @@
 import datetime
 
+from django.contrib.staticfiles import finders
 from django.test import Client, TestCase
 
 from chores.dates import get_today
 from chores.models import OneOffTask, RecurringChore
+
+
+class BaseTemplateTests(TestCase):
+    """Mobile-first base template/static setup (#7)."""
+
+    def setUp(self):
+        self.client = Client()
+
+    def test_home_page_extends_base_template(self):
+        response = self.client.get("/")
+
+        self.assertTemplateUsed(response, "chores/home.html")
+        self.assertTemplateUsed(response, "chores/base.html")
+
+    def test_viewport_meta_tag_present(self):
+        response = self.client.get("/")
+
+        self.assertContains(
+            response,
+            '<meta name="viewport" content="width=device-width, initial-scale=1">',
+            html=False,
+        )
+
+    def test_base_css_is_linked_and_served_as_a_vendored_static_file(self):
+        response = self.client.get("/")
+
+        self.assertContains(response, "chores/css/base.css")
+        # The file must actually exist as a vendored static asset findable
+        # by Django's staticfiles app (no CDN link, no build step).
+        self.assertIsNotNone(finders.find("chores/css/base.css"))
+
+    def test_no_horizontal_overflow_declared_and_base_font_size_is_at_least_16px(self):
+        css_path = finders.find("chores/css/base.css")
+        with open(css_path, encoding="utf-8") as css_file:
+            css = css_file.read()
+
+        self.assertIn("overflow-x: hidden", css)
+        self.assertIn("font-size: 16px", css)
 
 
 class HomeViewTests(TestCase):

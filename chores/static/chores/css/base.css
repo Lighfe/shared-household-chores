@@ -1,0 +1,141 @@
+/*
+ * Hand-written, vendored base stylesheet (no CDN, no build step).
+ * Mobile-first: rules apply from the smallest widths up; nothing here
+ * assumes a viewport wider than a phone.
+ */
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html {
+    /* 16px root so 1rem == 16px and mobile browsers don't auto-zoom
+       on form focus (criterion: legible body text, no pinch-zoom). */
+    font-size: 16px;
+    -webkit-text-size-adjust: 100%;
+}
+
+body {
+    margin: 0;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-size: 1rem;
+    line-height: 1.5;
+    color: #1a1a1a;
+    background: #fafafa;
+    /* Fluid width: never a fixed pixel width, so narrow phones never get
+       a horizontal scrollbar. */
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+.page {
+    width: 100%;
+    max-width: 40rem;
+    margin: 0 auto;
+    padding: 1rem;
+}
+
+h1 {
+    font-size: 1.25rem;
+    margin: 1.5rem 0 0.75rem;
+}
+
+h1:first-child {
+    margin-top: 0;
+}
+
+p,
+ul,
+li,
+div {
+    max-width: 100%;
+    overflow-wrap: break-word;
+}
+
+.empty-state {
+    color: #555;
+}
+
+.chore-list,
+.task-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    /* Visible spacing between adjacent items/tap targets. */
+    gap: 0.75rem;
+}
+
+.chore,
+.task {
+    border: 1px solid #ddd;
+    border-radius: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: #fff;
+}
+
+.chore--overdue,
+.task--overdue {
+    border-color: #c0392b;
+    border-left-width: 0.3rem;
+}
+
+.chore--due_today,
+.task--due_today {
+    border-color: #b8860b;
+    border-left-width: 0.3rem;
+}
+
+.chore--upcoming,
+.task--upcoming {
+    border-color: #2e7d32;
+    border-left-width: 0.3rem;
+}
+
+.chore--no_due_date,
+.task--no_due_date {
+    border-color: #999;
+    border-left-width: 0.3rem;
+}
+
+.chore-name,
+.task-name {
+    font-weight: 600;
+}
+
+.chore-status,
+.chore-next-due,
+.chore-last-done,
+.task-due-date,
+.task-status {
+    color: #444;
+    font-size: 0.9rem;
+}
+
+/*
+ * Any future interactive elements (links, buttons, form controls) on
+ * pages that extend this base template get a minimum 44x44px tap target
+ * with visible spacing, per the mobile usability acceptance criteria.
+ * None exist on the home page yet (#7 is markup-neutral; #8-#13 add
+ * controls to other pages later).
+ */
+a,
+button,
+input[type="submit"],
+input[type="button"] {
+    min-height: 44px;
+    min-width: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 1rem;
+    font-size: 1rem;
+}
+
+a + a,
+button + button {
+    margin-left: 0.5rem;
+}
