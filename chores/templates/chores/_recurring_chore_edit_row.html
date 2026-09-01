@@ -1,0 +1,40 @@
+{# Edit-mode partial for a single RecurringChore (#12). Swapped in place of #}
+{# _recurring_chore_row.html by the "Edit" control's hx-get, and swapped #}
+{# back to it on Cancel or successful Save. The wrapping <li> keeps the #}
+{# same id as the view-mode row so hx-swap="outerHTML" toggles between #}
+{# modes without disturbing sibling rows -- keep it the single root #}
+{# element. #}
+<li id="chore-row-{{ chore.id }}" class="chore chore--editing">
+    <form
+        class="edit-chore-form"
+        hx-post="{% url 'edit_recurring_chore' chore.id %}"
+        hx-target="#chore-row-{{ chore.id }}"
+        hx-swap="outerHTML"
+    >
+        {% csrf_token %}
+        <div class="form-row">
+            <label for="{{ chore_edit_form.name.id_for_label }}">{{ chore_edit_form.name.label }}</label>
+            {{ chore_edit_form.name }}
+            {% for error in chore_edit_form.name.errors %}
+                <div class="form-error">{{ error }}</div>
+            {% endfor %}
+        </div>
+        <div class="form-row">
+            <label for="{{ chore_edit_form.interval_days.id_for_label }}">{{ chore_edit_form.interval_days.label }}</label>
+            {{ chore_edit_form.interval_days }}
+            {% for error in chore_edit_form.interval_days.errors %}
+                <div class="form-error">{{ error }}</div>
+            {% endfor %}
+        </div>
+        <button type="submit">Save</button>
+        {# Cancel sits outside the <form> so it never submits it; GET, #}
+        {# never modifies data -- just swaps back to the view-mode row. #}
+        <button
+            type="button"
+            class="cancel-edit-button"
+            hx-get="{% url 'cancel_edit_recurring_chore' chore.id %}"
+            hx-target="#chore-row-{{ chore.id }}"
+            hx-swap="outerHTML"
+        >Cancel</button>
+    </form>
+</li>

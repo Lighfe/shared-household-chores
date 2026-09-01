@@ -23,4 +23,12 @@
         {% csrf_token %}
         <button type="submit">Mark done</button>
     </form>
+    {# GET fetches/displays the edit-form partial (#12); never modifies data. #}
+    <button
+        type="button"
+        class="edit-chore-button"
+        hx-get="{% url 'edit_recurring_chore' chore.id %}"
+        hx-target="#chore-row-{{ chore.id }}"
+        hx-swap="outerHTML"
+    >Edit</button>
 </li>

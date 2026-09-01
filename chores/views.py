@@ -1,10 +1,10 @@
 from datetime import date, timedelta
 
 from django.shortcuts import get_object_or_404, render
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
 from chores.dates import get_today
-from chores.forms import OneOffTaskForm, RecurringChoreForm
+from chores.forms import OneOffTaskForm, RecurringChoreEditForm, RecurringChoreForm
 from chores.models import OneOffTask, RecurringChore
 from chores.status import Status, get_status
 
@@ -24,6 +24,21 @@ _STATUS_ORDER = {
 # some platforms; a far-future date is a safe, simple stand-in). Never
 # rendered or compared for status classification.
 _FAR_FUTURE = date.max
+
+
+def _chore_row(chore, today):
+    """Build the row-context dict for a single RecurringChore.
+
+    Shared by every view that renders/re-renders one chore row (mark-done,
+    edit, cancel-edit) so the dict shape stays identical everywhere.
+    """
+    return {
+        "name": chore.name,
+        "next_due_date": chore.next_due_date,
+        "last_done_date": chore.last_done_date,
+        "status": get_status(chore.next_due_date, today),
+        "id": chore.id,
+    }
 
 
 def _get_sorted_chores(today):
@@ -167,19 +182,65 @@ def mark_recurring_chore_done(request, chore_id):
     chore.next_due_date = chore.next_due_date + timedelta(days=chore.interval_days)
     chore.save()
 
-    status = get_status(chore.next_due_date, today)
-    row = {
-        "name": chore.name,
-        "next_due_date": chore.next_due_date,
-        "last_done_date": chore.last_done_date,
-        "status": status,
-        "id": chore.id,
-    }
+    return render(
+        request,
+        "chores/_recurring_chore_row.html",
+        {"chore": _chore_row(chore, today)},
+    )
+
+
+@require_http_methods(["GET", "POST"])
+def edit_recurring_chore(request, chore_id):
+    """Fetch (GET) or save (POST) the edit form for a RecurringChore (#12).
+
+    GET never modifies data: it renders the edit-form partial pre-filled
+    from the chore's *current* database values, so editing the same chore
+    twice in a row always shows fresh, not stale, data (each GET rebuilds
+    the form fresh from `chore`, which is re-fetched every request).
+
+    POST validates via RecurringChoreEditForm (name + interval_days only).
+    On success it saves and returns the updated row partial (view mode).
+    On validation failure it re-renders the edit-form partial with errors,
+    preserving the user's other input, and saves nothing.
+
+    A missing/deleted chore_id 404s via get_object_or_404 on both methods.
+    """
+    chore = get_object_or_404(RecurringChore, pk=chore_id)
+    today = get_today()
+
+    if request.method == "POST":
+        form = RecurringChoreEditForm(request.POST, instance=chore)
+        if form.is_valid():
+            form.save()
+            return render(
+                request,
+                "chores/_recurring_chore_row.html",
+                {"chore": _chore_row(chore, today)},
+            )
+    else:
+        form = RecurringChoreEditForm(instance=chore)
+
+    return render(
+        request,
+        "chores/_recurring_chore_edit_row.html",
+        {"chore": chore, "chore_edit_form": form},
+    )
+
+
+@require_GET
+def cancel_edit_recurring_chore(request, chore_id):
+    """Cancel out of editing a RecurringChore, discarding any typed input (#12).
+
+    GET-only and never modifies data: it just re-renders the normal row
+    partial from the chore's current (unchanged) database values.
+    """
+    chore = get_object_or_404(RecurringChore, pk=chore_id)
+    today = get_today()
 
     return render(
         request,
         "chores/_recurring_chore_row.html",
-        {"chore": row},
+        {"chore": _chore_row(chore, today)},
     )
 
 

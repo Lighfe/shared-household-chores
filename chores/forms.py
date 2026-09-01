@@ -30,6 +30,30 @@ class RecurringChoreForm(forms.ModelForm):
         }
 
 
+class RecurringChoreEditForm(forms.ModelForm):
+    """Edit form for an existing RecurringChore's name/interval_days (#12).
+
+    Deliberately restricted to name and interval_days -- excludes
+    next_due_date and last_done_date. Per the "editing doesn't touch the
+    current cycle" decision, this form edits the schedule going forward
+    only: next_due_date stays whatever it already was, and only the next
+    mark-done (#10) uses the newly saved interval_days. Manual
+    next_due_date correction is #16, a later extension of this same form
+    -- do not add that field here.
+    """
+
+    class Meta:
+        model = RecurringChore
+        fields = ["name", "interval_days"]
+        labels = {
+            "interval_days": "Interval (days)",
+        }
+        widgets = {
+            "name": forms.TextInput(attrs={"maxlength": 255}),
+            "interval_days": forms.NumberInput(attrs={"min": 1, "step": 1}),
+        }
+
+
 class OneOffTaskForm(forms.ModelForm):
     """Create form for OneOffTask (#9).
 

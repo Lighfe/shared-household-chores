@@ -42,4 +42,14 @@ urlpatterns = [
         chores_views.mark_one_off_task_done,
         name='mark_one_off_task_done',
     ),
+    path(
+        'recurring-chores/<int:chore_id>/edit/',
+        chores_views.edit_recurring_chore,
+        name='edit_recurring_chore',
+    ),
+    path(
+        'recurring-chores/<int:chore_id>/cancel-edit/',
+        chores_views.cancel_edit_recurring_chore,
+        name='cancel_edit_recurring_chore',
+    ),
 ]
