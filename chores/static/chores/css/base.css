@@ -141,6 +141,33 @@ button + button {
 }
 
 /*
+ * #18: the one-off task "remove"/"cancel" control sits next to "done"
+ * but must be visually de-emphasized so it can't be confused with it --
+ * muted color and a smaller "x" glyph instead of a same-weight label.
+ * Tap target stays at the 44x44px minimum above; only color/weight/font
+ * are overridden here.
+ */
+.task-actions {
+    display: flex;
+    align-items: center;
+}
+
+.task-remove-button {
+    color: #888;
+    background: transparent;
+    border-color: #ccc;
+    font-size: 1.2rem;
+    line-height: 1;
+    padding: 0.25rem;
+}
+
+.task-remove-button:hover,
+.task-remove-button:focus {
+    color: #a00;
+    border-color: #a00;
+}
+
+/*
  * Minimal form styling so the add-chore form (#8) doesn't break on a
  * phone: full-width, non-overflowing inputs and legible, visible error
  * text. Not full visual polish (that's #7's territory) -- just "doesn't

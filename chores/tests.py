@@ -374,6 +374,128 @@ class MarkOneOffTaskDoneTests(TestCase):
         self.assertIn(response.status_code, (200, 404))
 
 
+class CancelOneOffTaskTests(TestCase):
+    """Cancel/remove (hard delete) endpoint for a OneOffTask (#18).
+
+    Split out from #11: same idempotent hard-delete data behavior as
+    mark-done, but a distinct endpoint/control -- see
+    `_docs/decisions.md` ("Cancelling a one-off task is a distinct action
+    from completing it").
+    """
+
+    def setUp(self):
+        self.client = Client()
+        self.today = get_today()
+
+    def _cancel_url(self, task_id):
+        return f"/one-off-tasks/{task_id}/cancel/"
+
+    def _done_url(self, task_id):
+        return f"/one-off-tasks/{task_id}/done/"
+
+    def test_get_request_does_not_delete_anything(self):
+        task = OneOffTask.objects.create(
+            name="Return library book", due_date=self.today
+        )
+
+        response = self.client.get(self._cancel_url(task.pk))
+
+        self.assertEqual(response.status_code, 405)
+        self.assertTrue(OneOffTask.objects.filter(pk=task.pk).exists())
+
+    def test_valid_post_deletes_the_task(self):
+        task = OneOffTask.objects.create(
+            name="Return library book", due_date=self.today
+        )
+
+        response = self.client.post(self._cancel_url(task.pk))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(OneOffTask.objects.filter(pk=task.pk).exists())
+
+    def test_response_is_the_section_partial_without_the_cancelled_task(self):
+        task = OneOffTask.objects.create(
+            name="Return library book", due_date=self.today
+        )
+        OneOffTask.objects.create(name="Renew passport", due_date=None)
+
+        response = self.client.post(self._cancel_url(task.pk))
+
+        self.assertTemplateUsed(response, "chores/_one_off_tasks_section.html")
+        self.assertTemplateNotUsed(response, "chores/home.html")
+        content = response.content.decode()
+        self.assertNotIn("Return library book", content)
+        self.assertIn("Renew passport", content)
+
+    def test_recurring_chore_section_is_unaffected(self):
+        RecurringChore.objects.create(
+            name="Take out trash",
+            interval_days=7,
+            next_due_date=self.today,
+        )
+        task = OneOffTask.objects.create(
+            name="Return library book", due_date=self.today
+        )
+
+        self.client.post(self._cancel_url(task.pk))
+        response = self.client.get("/")
+
+        self.assertContains(response, "Take out trash")
+
+    def test_cancelling_one_task_does_not_affect_marking_another_done(self):
+        cancel_task = OneOffTask.objects.create(
+            name="Return library book", due_date=self.today
+        )
+        done_task = OneOffTask.objects.create(
+            name="Renew passport", due_date=self.today
+        )
+
+        self.client.post(self._cancel_url(cancel_task.pk))
+        response = self.client.post(self._done_url(done_task.pk))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(OneOffTask.objects.filter(pk=cancel_task.pk).exists())
+        self.assertFalse(OneOffTask.objects.filter(pk=done_task.pk).exists())
+
+    def test_cancelling_the_only_task_shows_empty_state(self):
+        task = OneOffTask.objects.create(
+            name="Return library book", due_date=self.today
+        )
+
+        response = self.client.post(self._cancel_url(task.pk))
+
+        self.assertContains(response, "No one-off tasks yet.")
+        self.assertNotContains(response, "<ul class=\"task-list\">")
+
+    def test_posting_twice_for_the_same_task_does_not_error(self):
+        task = OneOffTask.objects.create(
+            name="Return library book", due_date=self.today
+        )
+
+        first_response = self.client.post(self._cancel_url(task.pk))
+        second_response = self.client.post(self._cancel_url(task.pk))
+
+        self.assertEqual(first_response.status_code, 200)
+        self.assertIn(second_response.status_code, (200, 404))
+        self.assertFalse(OneOffTask.objects.filter(pk=task.pk).exists())
+
+    def test_posting_for_a_never_existed_id_does_not_error(self):
+        response = self.client.post(self._cancel_url(999999))
+
+        self.assertIn(response.status_code, (200, 404))
+
+    def test_csrf_protection_is_enforced(self):
+        task = OneOffTask.objects.create(
+            name="Return library book", due_date=self.today
+        )
+        csrf_client = Client(enforce_csrf_checks=True)
+
+        response = csrf_client.post(self._cancel_url(task.pk))
+
+        self.assertEqual(response.status_code, 403)
+        self.assertTrue(OneOffTask.objects.filter(pk=task.pk).exists())
+
+
 class SmokeTest(TestCase):
     def test_admin_path_does_not_error(self):
         response = Client().get("/admin/")

@@ -305,3 +305,35 @@ def mark_one_off_task_done(request, task_id):
         "chores/_one_off_tasks_section.html",
         {"tasks": tasks, "task_form": task_form},
     )
+
+
+@require_POST
+def cancel_one_off_task(request, task_id):
+    """Cancel/remove a OneOffTask by hard-deleting it (#18).
+
+    Split out from #11: completing and cancelling are different user
+    intents, but both hard-delete the row with no history/flag kept
+    either way (per `_docs/plan.md` and the "cancelling is a distinct
+    action from completing" decision) -- the only difference from
+    `mark_one_off_task_done` is which UI control the user pressed.
+
+    Same idempotent-delete pattern as #11: filtering rather than
+    get_object_or_404 + .delete() means an id that's already gone
+    (double-submit, stale page) or that never existed simply deletes zero
+    rows instead of raising, so the endpoint always succeeds. Returns the
+    re-rendered one-off-tasks section partial -- not a row -- since a
+    deleted row can't swap itself; the client targets #one-off-tasks with
+    hx-swap="outerHTML".
+    """
+    today = get_today()
+
+    OneOffTask.objects.filter(pk=task_id).delete()
+
+    tasks = _get_sorted_tasks(today)
+    task_form = OneOffTaskForm()
+
+    return render(
+        request,
+        "chores/_one_off_tasks_section.html",
+        {"tasks": tasks, "task_form": task_form},
+    )

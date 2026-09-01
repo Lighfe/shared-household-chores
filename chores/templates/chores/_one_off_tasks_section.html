@@ -46,20 +46,45 @@
                     {% if task.due_date %}
                         <div class="task-status">Status: {{ task.status.value }}</div>
                     {% endif %}
-                    <form
-                        class="done-task-form"
-                        hx-post="{% url 'mark_one_off_task_done' task.id %}"
-                        hx-confirm="Mark this task done? This cannot be undone."
-                        hx-target="#one-off-tasks"
-                        hx-swap="outerHTML"
-                    >
-                        {% csrf_token %}
-                        {# hx-disabled-elt: client-side double-submit guard #}
-                        {# (#17), same as the recurring-chore mark-done #}
-                        {# control -- disables the instant it's clicked, #}
-                        {# re-enables once the request settles. #}
-                        <button type="submit" hx-disabled-elt="this">Done</button>
-                    </form>
+                    <div class="task-actions">
+                        <form
+                            class="done-task-form"
+                            hx-post="{% url 'mark_one_off_task_done' task.id %}"
+                            hx-confirm="Mark this task done? This cannot be undone."
+                            hx-target="#one-off-tasks"
+                            hx-swap="outerHTML"
+                        >
+                            {% csrf_token %}
+                            {# hx-disabled-elt: client-side double-submit guard #}
+                            {# (#17), same as the recurring-chore mark-done #}
+                            {# control -- disables the instant it's clicked, #}
+                            {# re-enables once the request settles. #}
+                            <button type="submit" hx-disabled-elt="this">Done</button>
+                        </form>
+                        {# Cancel/remove (#18): a distinct action from "done" #}
+                        {# -- same hard-delete result, but a user shouldn't #}
+                        {# have to dishonestly mark a task "done" just to #}
+                        {# clear it. Visually de-emphasized (muted, smaller, #}
+                        {# "x" label) via .task-remove-button so it can't be #}
+                        {# confused with "Done", and has its own confirm #}
+                        {# prompt/copy plus its own double-submit guard. #}
+                        <form
+                            class="cancel-task-form"
+                            hx-post="{% url 'cancel_one_off_task' task.id %}"
+                            hx-confirm="Remove this task? This cannot be undone."
+                            hx-target="#one-off-tasks"
+                            hx-swap="outerHTML"
+                        >
+                            {% csrf_token %}
+                            <button
+                                type="submit"
+                                class="task-remove-button"
+                                hx-disabled-elt="this"
+                                aria-label="Remove task"
+                                title="Remove"
+                            >&times;</button>
+                        </form>
+                    </div>
                 </li>
             {% endfor %}
         </ul>
