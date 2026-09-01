@@ -191,10 +191,12 @@ class MarkRecurringChoreDoneTests(TestCase):
         )
         self.assertLess(chore.next_due_date, self.today)
 
-    def test_marking_done_twice_in_a_row_advances_next_due_date_twice(self):
-        # NOTE: per _docs/decisions.md, #17 supersedes this behavior with a
-        # same-day no-op guard -- this test documents #10's original
-        # fixed-schedule behavior and is expected to be rewritten by #17.
+    def test_marking_done_twice_in_a_row_advances_next_due_date_only_once(self):
+        # Same-day no-op guard (#17): two back-to-back same-day POSTs
+        # (double-tap/retry) are treated as one completion event, since
+        # interval_days is always a whole number of days and a chore can
+        # only meaningfully complete once per calendar day. This supersedes
+        # #10's original test, which asserted the due date advanced twice.
         old_next_due_date = self.today - datetime.timedelta(days=1)
         chore = RecurringChore.objects.create(
             name="Take out trash",
@@ -206,6 +208,49 @@ class MarkRecurringChoreDoneTests(TestCase):
         chore.refresh_from_db()
         after_first = chore.next_due_date
         self.assertEqual(after_first, old_next_due_date + datetime.timedelta(days=7))
+
+        self.client.post(self._mark_done_url(chore.pk))
+        chore.refresh_from_db()
+
+        self.assertEqual(chore.next_due_date, after_first)
+        self.assertEqual(chore.last_done_date, self.today)
+
+    def test_second_same_day_post_returns_the_current_row_unchanged(self):
+        old_next_due_date = self.today - datetime.timedelta(days=1)
+        chore = RecurringChore.objects.create(
+            name="Take out trash",
+            interval_days=7,
+            next_due_date=old_next_due_date,
+        )
+
+        self.client.post(self._mark_done_url(chore.pk))
+        chore.refresh_from_db()
+        after_first = chore.next_due_date
+
+        response = self.client.post(self._mark_done_url(chore.pk))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "chores/_recurring_chore_row.html")
+        content = response.content.decode()
+        self.assertIn(after_first.isoformat(), content)
+
+    def test_mark_done_on_a_later_day_advances_normally_after_a_same_day_noop(self):
+        # A genuine new completion on a later day (last_done_date is not
+        # today) must not be blocked by the same-day guard.
+        old_next_due_date = self.today - datetime.timedelta(days=1)
+        chore = RecurringChore.objects.create(
+            name="Take out trash",
+            interval_days=7,
+            next_due_date=old_next_due_date,
+        )
+
+        self.client.post(self._mark_done_url(chore.pk))
+        chore.refresh_from_db()
+        after_first = chore.next_due_date
+
+        # Simulate the next calendar day: last_done_date is no longer today.
+        chore.last_done_date = self.today - datetime.timedelta(days=1)
+        chore.save()
 
         self.client.post(self._mark_done_url(chore.pk))
         chore.refresh_from_db()

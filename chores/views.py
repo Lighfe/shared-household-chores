@@ -174,13 +174,22 @@ def mark_recurring_chore_done(request, chore_id):
     from `last_done_date` -- a fixed schedule, per the "many intervals
     overdue advances by exactly one interval" decision. Returns just the
     updated row partial for an HTMX out-of-band swap of that one row.
+
+    Same-day no-op guard (#17): if `last_done_date` is already today, this
+    request is treated as a duplicate of an already-processed completion
+    (double-tap/retry) rather than a new one -- `interval_days` is always a
+    whole number of days, so a chore can only meaningfully complete once
+    per calendar day. In that case `next_due_date` is left untouched and
+    the current (unchanged) row is returned, same response shape as a
+    normal mark-done.
     """
     chore = get_object_or_404(RecurringChore, pk=chore_id)
     today = get_today()
 
-    chore.last_done_date = today
-    chore.next_due_date = chore.next_due_date + timedelta(days=chore.interval_days)
-    chore.save()
+    if chore.last_done_date != today:
+        chore.last_done_date = today
+        chore.next_due_date = chore.next_due_date + timedelta(days=chore.interval_days)
+        chore.save()
 
     return render(
         request,

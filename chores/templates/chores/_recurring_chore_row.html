@@ -21,7 +21,13 @@
         hx-swap="outerHTML"
     >
         {% csrf_token %}
-        <button type="submit">Mark done</button>
+        {# hx-disabled-elt disables the button the instant it's clicked, #}
+        {# before the request is sent, and re-enables it once the request #}
+        {# settles -- client-side double-submit guard (#17). Since this #}
+        {# whole row is swapped out on response, the freshly-rendered #}
+        {# button is enabled regardless; this also covers the case where #}
+        {# the response is an error and the row isn't swapped. #}
+        <button type="submit" hx-disabled-elt="this">Mark done</button>
     </form>
     {# GET fetches/displays the edit-form partial (#12); never modifies data. #}
     <button

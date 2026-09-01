@@ -54,7 +54,11 @@
                         hx-swap="outerHTML"
                     >
                         {% csrf_token %}
-                        <button type="submit">Done</button>
+                        {# hx-disabled-elt: client-side double-submit guard #}
+                        {# (#17), same as the recurring-chore mark-done #}
+                        {# control -- disables the instant it's clicked, #}
+                        {# re-enables once the request settles. #}
+                        <button type="submit" hx-disabled-elt="this">Done</button>
                     </form>
                 </li>
             {% endfor %}
