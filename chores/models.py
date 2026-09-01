@@ -18,3 +18,11 @@ class RecurringChore(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class OneOffTask(models.Model):
+    name = models.CharField(max_length=255, blank=False)
+    due_date = models.DateField(null=True, blank=True, default=None)
+
+    def __str__(self):
+        return self.name

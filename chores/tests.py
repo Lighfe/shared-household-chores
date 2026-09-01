@@ -4,7 +4,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.test import Client, TestCase
 
-from chores.models import RecurringChore
+from chores.models import OneOffTask, RecurringChore
 
 
 class RecurringChoreModelTest(TestCase):
@@ -72,6 +72,42 @@ class RecurringChoreModelTest(TestCase):
         )
 
         self.assertEqual(str(chore), "Take out trash")
+
+
+class OneOffTaskModelTest(TestCase):
+    def test_create_with_due_date_saves_and_reloads(self):
+        task = OneOffTask.objects.create(
+            name="Return library books",
+            due_date=datetime.date(2026, 9, 8),
+        )
+
+        reloaded = OneOffTask.objects.get(pk=task.pk)
+
+        self.assertEqual(reloaded.name, "Return library books")
+        self.assertEqual(reloaded.due_date, datetime.date(2026, 9, 8))
+
+    def test_create_without_due_date_saves_as_none(self):
+        task = OneOffTask.objects.create(name="Clean out the garage")
+
+        reloaded = OneOffTask.objects.get(pk=task.pk)
+
+        self.assertIsNone(reloaded.due_date)
+
+    def test_delete_removes_it_from_the_database(self):
+        task = OneOffTask.objects.create(
+            name="Fix the leaky faucet",
+            due_date=datetime.date(2026, 9, 8),
+        )
+        task_id = task.pk
+
+        task.delete()
+
+        self.assertFalse(OneOffTask.objects.filter(pk=task_id).exists())
+
+    def test_str_returns_name(self):
+        task = OneOffTask(name="Fix the leaky faucet")
+
+        self.assertEqual(str(task), "Fix the leaky faucet")
 
 
 class SmokeTest(TestCase):
