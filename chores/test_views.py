@@ -3,7 +3,7 @@ import datetime
 from django.test import Client, TestCase
 
 from chores.dates import get_today
-from chores.models import RecurringChore
+from chores.models import OneOffTask, RecurringChore
 
 
 class HomeViewTests(TestCase):
@@ -155,6 +155,165 @@ class HomeViewTests(TestCase):
             interval_days=7,
             next_due_date=self.today,
         )
+
+        response = self.client.get("/")
+
+        self.assertNotContains(response, "<table")
+
+
+class HomeViewTasksTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.today = get_today()
+
+    def test_empty_state_message_when_no_tasks(self):
+        response = self.client.get("/")
+
+        self.assertContains(response, "No one-off tasks yet")
+
+    def test_recurring_chore_section_unaffected_by_tasks(self):
+        RecurringChore.objects.create(
+            name="Take out trash",
+            interval_days=7,
+            next_due_date=self.today,
+        )
+        OneOffTask.objects.create(name="Return library book", due_date=self.today)
+
+        response = self.client.get("/")
+        content = response.content.decode()
+
+        self.assertIn("Take out trash", content)
+        self.assertIn("chore--due_today", content)
+        self.assertIn("Return library book", content)
+
+    def test_each_task_appears_exactly_once_with_name(self):
+        OneOffTask.objects.create(name="Return library book", due_date=self.today)
+        OneOffTask.objects.create(name="Renew passport", due_date=None)
+
+        response = self.client.get("/")
+        content = response.content.decode()
+
+        self.assertEqual(content.count("Return library book"), 1)
+        self.assertEqual(content.count("Renew passport"), 1)
+
+    def test_task_with_due_date_shows_it(self):
+        OneOffTask.objects.create(
+            name="Return library book",
+            due_date=self.today + datetime.timedelta(days=3),
+        )
+
+        response = self.client.get("/")
+
+        self.assertContains(
+            response, (self.today + datetime.timedelta(days=3)).isoformat()
+        )
+
+    def test_task_with_no_due_date_shows_no_due_date_placeholder(self):
+        OneOffTask.objects.create(name="Renew passport", due_date=None)
+
+        response = self.client.get("/")
+
+        self.assertContains(response, "No due date")
+
+    def test_task_with_no_due_date_is_never_overdue_or_due_today(self):
+        OneOffTask.objects.create(name="Renew passport", due_date=None)
+
+        response = self.client.get("/")
+        task = response.context["tasks"][0]
+
+        self.assertNotIn(task["status"].value, ("overdue", "due_today"))
+
+    def test_overdue_task_flagged_overdue(self):
+        OneOffTask.objects.create(
+            name="Pay rent",
+            due_date=self.today - datetime.timedelta(days=1),
+        )
+
+        response = self.client.get("/")
+
+        self.assertContains(response, "task--overdue")
+
+    def test_due_today_task_flagged_due_today(self):
+        OneOffTask.objects.create(name="Pay rent", due_date=self.today)
+
+        response = self.client.get("/")
+
+        self.assertContains(response, "task--due_today")
+
+    def test_future_task_flagged_upcoming(self):
+        OneOffTask.objects.create(
+            name="Pay rent",
+            due_date=self.today + datetime.timedelta(days=10),
+        )
+
+        response = self.client.get("/")
+
+        self.assertContains(response, "task--upcoming")
+
+    def test_ordering_overdue_before_due_today_before_upcoming_before_no_due_date(
+        self,
+    ):
+        OneOffTask.objects.create(
+            name="Upcoming task",
+            due_date=self.today + datetime.timedelta(days=5),
+        )
+        OneOffTask.objects.create(name="No due date task", due_date=None)
+        OneOffTask.objects.create(
+            name="Overdue task",
+            due_date=self.today - datetime.timedelta(days=5),
+        )
+        OneOffTask.objects.create(name="Due today task", due_date=self.today)
+
+        response = self.client.get("/")
+        names_in_order = [t["name"] for t in response.context["tasks"]]
+
+        self.assertEqual(
+            names_in_order,
+            [
+                "Overdue task",
+                "Due today task",
+                "Upcoming task",
+                "No due date task",
+            ],
+        )
+
+    def test_ordering_within_dated_group_by_due_date_ascending(self):
+        OneOffTask.objects.create(
+            name="Overdue far",
+            due_date=self.today - datetime.timedelta(days=10),
+        )
+        OneOffTask.objects.create(
+            name="Overdue near",
+            due_date=self.today - datetime.timedelta(days=1),
+        )
+
+        response = self.client.get("/")
+        names_in_order = [t["name"] for t in response.context["tasks"]]
+
+        self.assertEqual(names_in_order, ["Overdue far", "Overdue near"])
+
+    def test_no_due_date_tasks_sorted_stably_by_name(self):
+        OneOffTask.objects.create(name="Renew passport", due_date=None)
+        OneOffTask.objects.create(name="Clean garage", due_date=None)
+
+        response = self.client.get("/")
+        names_in_order = [t["name"] for t in response.context["tasks"]]
+
+        self.assertEqual(names_in_order, ["Clean garage", "Renew passport"])
+
+    def test_no_create_edit_complete_or_delete_controls_for_tasks(self):
+        OneOffTask.objects.create(name="Return library book", due_date=self.today)
+
+        response = self.client.get("/")
+        content = response.content.decode().lower()
+
+        self.assertNotIn("<form", content)
+        self.assertNotIn("<button", content)
+        for forbidden in ("add", "edit", "delete", "mark done", "mark as done"):
+            self.assertNotIn(forbidden, content)
+
+    def test_no_fixed_width_table_markup_for_tasks(self):
+        OneOffTask.objects.create(name="Return library book", due_date=self.today)
 
         response = self.client.get("/")
 
