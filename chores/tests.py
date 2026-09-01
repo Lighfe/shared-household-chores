@@ -4,6 +4,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.test import Client, TestCase
 
+from chores.dates import get_today
 from chores.models import OneOffTask, RecurringChore
 
 
@@ -108,6 +109,147 @@ class OneOffTaskModelTest(TestCase):
         task = OneOffTask(name="Fix the leaky faucet")
 
         self.assertEqual(str(task), "Fix the leaky faucet")
+
+
+class MarkRecurringChoreDoneTests(TestCase):
+    """Mark-done endpoint for a RecurringChore (#10)."""
+
+    def setUp(self):
+        self.client = Client()
+        self.today = get_today()
+
+    def _mark_done_url(self, chore_id):
+        return f"/recurring-chores/{chore_id}/mark-done/"
+
+    def test_get_request_does_not_change_anything(self):
+        chore = RecurringChore.objects.create(
+            name="Take out trash",
+            interval_days=7,
+            next_due_date=self.today,
+        )
+
+        response = self.client.get(self._mark_done_url(chore.pk))
+
+        self.assertNotEqual(response.status_code, 200)
+        chore.refresh_from_db()
+        self.assertEqual(chore.next_due_date, self.today)
+        self.assertIsNone(chore.last_done_date)
+
+    def test_marking_nonexistent_chore_returns_404_and_does_not_error(self):
+        response = self.client.post(self._mark_done_url(999999))
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_valid_post_sets_last_done_date_to_today(self):
+        chore = RecurringChore.objects.create(
+            name="Take out trash",
+            interval_days=7,
+            next_due_date=self.today,
+        )
+
+        self.client.post(self._mark_done_url(chore.pk))
+
+        chore.refresh_from_db()
+        self.assertEqual(chore.last_done_date, self.today)
+
+    def test_next_due_date_advances_by_interval_from_its_previous_value(self):
+        old_next_due_date = self.today - datetime.timedelta(days=1)
+        chore = RecurringChore.objects.create(
+            name="Overdue chore",
+            interval_days=7,
+            next_due_date=old_next_due_date,
+        )
+
+        self.client.post(self._mark_done_url(chore.pk))
+
+        chore.refresh_from_db()
+        self.assertEqual(
+            chore.next_due_date,
+            old_next_due_date + datetime.timedelta(days=7),
+        )
+        # A late completion does not snap to "today + interval_days".
+        self.assertNotEqual(
+            chore.next_due_date, self.today + datetime.timedelta(days=7)
+        )
+
+    def test_far_overdue_chore_advances_by_exactly_one_interval_not_caught_up(self):
+        old_next_due_date = self.today - datetime.timedelta(days=100)
+        chore = RecurringChore.objects.create(
+            name="Very overdue chore",
+            interval_days=7,
+            next_due_date=old_next_due_date,
+        )
+
+        self.client.post(self._mark_done_url(chore.pk))
+
+        chore.refresh_from_db()
+        # Exactly one interval added from the previous next_due_date --
+        # not looped forward to catch up to today or beyond.
+        self.assertEqual(
+            chore.next_due_date,
+            old_next_due_date + datetime.timedelta(days=7),
+        )
+        self.assertLess(chore.next_due_date, self.today)
+
+    def test_marking_done_twice_in_a_row_advances_next_due_date_twice(self):
+        # NOTE: per _docs/decisions.md, #17 supersedes this behavior with a
+        # same-day no-op guard -- this test documents #10's original
+        # fixed-schedule behavior and is expected to be rewritten by #17.
+        old_next_due_date = self.today - datetime.timedelta(days=1)
+        chore = RecurringChore.objects.create(
+            name="Take out trash",
+            interval_days=7,
+            next_due_date=old_next_due_date,
+        )
+
+        self.client.post(self._mark_done_url(chore.pk))
+        chore.refresh_from_db()
+        after_first = chore.next_due_date
+        self.assertEqual(after_first, old_next_due_date + datetime.timedelta(days=7))
+
+        self.client.post(self._mark_done_url(chore.pk))
+        chore.refresh_from_db()
+
+        self.assertEqual(
+            chore.next_due_date, after_first + datetime.timedelta(days=7)
+        )
+        self.assertEqual(chore.last_done_date, self.today)
+
+    def test_response_is_the_row_partial_with_updated_fields(self):
+        chore = RecurringChore.objects.create(
+            name="Take out trash",
+            interval_days=7,
+            next_due_date=self.today,
+        )
+
+        response = self.client.post(self._mark_done_url(chore.pk))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "chores/_recurring_chore_row.html")
+        self.assertTemplateNotUsed(response, "chores/home.html")
+        self.assertTemplateNotUsed(response, "chores/_recurring_chores_section.html")
+        content = response.content.decode()
+        self.assertIn("Take out trash", content)
+        self.assertIn(self.today.isoformat(), content)
+        self.assertIn(
+            (self.today + datetime.timedelta(days=7)).isoformat(), content
+        )
+        self.assertIn("chore--upcoming", content)
+
+    def test_response_reflects_status_of_the_new_next_due_date(self):
+        # interval_days=1 and next_due_date already today -> after marking
+        # done, the new next_due_date is tomorrow -> status "upcoming".
+        chore = RecurringChore.objects.create(
+            name="Water plants",
+            interval_days=1,
+            next_due_date=self.today,
+        )
+
+        response = self.client.post(self._mark_done_url(chore.pk))
+
+        self.assertContains(response, "chore--upcoming")
+        self.assertNotContains(response, "chore--overdue")
+        self.assertNotContains(response, "chore--due_today")
 
 
 class SmokeTest(TestCase):

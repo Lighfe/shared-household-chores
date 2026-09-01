@@ -40,19 +40,7 @@
     {% if chores %}
         <ul class="chore-list">
             {% for chore in chores %}
-                <li class="chore chore--{{ chore.status.value }}">
-                    <div class="chore-name">{{ chore.name }}</div>
-                    <div class="chore-status">Status: {{ chore.status.value }}</div>
-                    <div class="chore-next-due">Next due: {{ chore.next_due_date|date:"Y-m-d" }}</div>
-                    <div class="chore-last-done">
-                        Last done:
-                        {% if chore.last_done_date %}
-                            {{ chore.last_done_date|date:"Y-m-d" }}
-                        {% else %}
-                            Never
-                        {% endif %}
-                    </div>
-                </li>
+                {% include "chores/_recurring_chore_row.html" %}
             {% endfor %}
         </ul>
     {% else %}

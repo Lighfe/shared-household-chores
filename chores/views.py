@@ -1,6 +1,6 @@
-from datetime import date
+from datetime import date, timedelta
 
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, render
 from django.views.decorators.http import require_POST
 
 from chores.dates import get_today
@@ -146,4 +146,38 @@ def add_one_off_task(request):
         request,
         "chores/_one_off_tasks_section.html",
         {"tasks": tasks, "task_form": form},
+    )
+
+
+@require_POST
+def mark_recurring_chore_done(request, chore_id):
+    """Mark a RecurringChore done (#10).
+
+    `last_done_date` is set to today (via #15's `get_today()`, not
+    `date.today()`). `next_due_date` is recomputed from its *previous*
+    value (`old_next_due_date + interval_days`), not from today and not
+    from `last_done_date` -- a fixed schedule, per the "many intervals
+    overdue advances by exactly one interval" decision. Returns just the
+    updated row partial for an HTMX out-of-band swap of that one row.
+    """
+    chore = get_object_or_404(RecurringChore, pk=chore_id)
+    today = get_today()
+
+    chore.last_done_date = today
+    chore.next_due_date = chore.next_due_date + timedelta(days=chore.interval_days)
+    chore.save()
+
+    status = get_status(chore.next_due_date, today)
+    row = {
+        "name": chore.name,
+        "next_due_date": chore.next_due_date,
+        "last_done_date": chore.last_done_date,
+        "status": status,
+        "id": chore.id,
+    }
+
+    return render(
+        request,
+        "chores/_recurring_chore_row.html",
+        {"chore": row},
     )

@@ -1,0 +1,26 @@
+{# Single RecurringChore row (#10). Extracted so a "mark done" POST can #}
+{# swap just this row in place, instead of the whole chore-list section. #}
+{# The wrapping <li> carries the id the mark-done response replaces via #}
+{# hx-swap="outerHTML" -- keep it as the single root element. #}
+<li id="chore-row-{{ chore.id }}" class="chore chore--{{ chore.status.value }}">
+    <div class="chore-name">{{ chore.name }}</div>
+    <div class="chore-status">Status: {{ chore.status.value }}</div>
+    <div class="chore-next-due">Next due: {{ chore.next_due_date|date:"Y-m-d" }}</div>
+    <div class="chore-last-done">
+        Last done:
+        {% if chore.last_done_date %}
+            {{ chore.last_done_date|date:"Y-m-d" }}
+        {% else %}
+            Never
+        {% endif %}
+    </div>
+    <form
+        class="mark-done-form"
+        hx-post="{% url 'mark_recurring_chore_done' chore.id %}"
+        hx-target="#chore-row-{{ chore.id }}"
+        hx-swap="outerHTML"
+    >
+        {% csrf_token %}
+        <button type="submit">Mark done</button>
+    </form>
+</li>
