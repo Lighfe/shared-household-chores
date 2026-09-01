@@ -14,8 +14,8 @@ Where new detail goes
 When it happens
 
 - PM, while grooming (lifecycle step 2): record judgment calls in decisions.md as part of grooming, not after
-- Engineer, while implementing (step 3): name any new command or constraint worth keeping in the closing comment
-- Orchestrator, before closing an issue (step 6): apply any command/rule the engineer flagged, then close
+- Engineer, while implementing (step 3): end the closing comment with a `Worth keeping:` line (or `Worth keeping: none`)
+- Orchestrator, before closing an issue (step 6): apply what the `Worth keeping:` line names, then close
 
 A section that has grown past ~7 lines is a signal to split it into its own
 file, leaving one pointer line behind. AGENTS.md and process.md should never

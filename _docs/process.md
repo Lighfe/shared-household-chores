@@ -20,12 +20,14 @@ Lifecycle
 3. Engineer implements it
 4. QA verifies it
 5. On FAIL, back to step 3 with the QA comment as input
-6. On PASS, apply any flagged command/rule updates (see `_docs/meta.md`), then close the issue
+6. On PASS, read the engineer's "Worth keeping" line and apply it (see `_docs/meta.md`) before closing the issue
 7. Repeat until the backlog is empty
 
 Rules
 
 - Do not skip step 2
+- Do not skip step 6, even when the engineer's comment says "Worth keeping: none"
 - The engineer does not close the issue
 - QA does not fix the code, only outputs PASS or FAIL
 - The orchestrator closes the issue only after QA outputs PASS
+- When engineers work in parallel, do not `git stash`/`stash pop` across the whole working tree — it can pull in another engineer's uncommitted changes; extract only the intended files (e.g. `git show stash@{0}:<path>`)

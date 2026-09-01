@@ -15,7 +15,9 @@ Definition of done:
 - Tests are written for the new behaviour, and the whole suite passes
 - The work is committed
 - The issue is still open, with a comment saying what you did
-- A new command or constraint worth keeping is named in that comment
+- That comment ends with a line starting `Worth keeping:` naming any new
+  command or constraint to add to `AGENTS.md`/`process.md`, or
+  `Worth keeping: none` if there isn't one
 
 If an acceptance criterion is wrong, impossible, or contradicts
 another one, create a comment on the issue about it.
