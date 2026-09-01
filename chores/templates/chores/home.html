@@ -4,29 +4,7 @@
     {# Styling hooks: chore/chore--{status} and task/task--{status} classes below #}
     {# are targeted by chores/static/chores/css/base.css. Keep these hooks if #}
     {# this markup is restructured later (#5/#6/#8-#13). #}
-    <h1>Recurring Chores</h1>
-
-    {% if chores %}
-        <ul class="chore-list">
-            {% for chore in chores %}
-                <li class="chore chore--{{ chore.status.value }}">
-                    <div class="chore-name">{{ chore.name }}</div>
-                    <div class="chore-status">Status: {{ chore.status.value }}</div>
-                    <div class="chore-next-due">Next due: {{ chore.next_due_date|date:"Y-m-d" }}</div>
-                    <div class="chore-last-done">
-                        Last done:
-                        {% if chore.last_done_date %}
-                            {{ chore.last_done_date|date:"Y-m-d" }}
-                        {% else %}
-                            Never
-                        {% endif %}
-                    </div>
-                </li>
-            {% endfor %}
-        </ul>
-    {% else %}
-        <p class="empty-state">No recurring chores yet.</p>
-    {% endif %}
+    {% include "chores/_recurring_chores_section.html" %}
 
     <h1>One-off Tasks</h1>
 

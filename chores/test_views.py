@@ -173,7 +173,11 @@ class HomeViewTests(TestCase):
         # Deterministic tie-break: alphabetical by name since due dates match.
         self.assertEqual(first_names, ["Tie A", "Tie B"])
 
-    def test_page_has_no_add_edit_delete_or_mark_done_controls(self):
+    def test_page_has_no_edit_delete_or_mark_done_controls_for_chores(self):
+        # Updated by #8: the home page now carries an add-chore form (that
+        # issue's own acceptance criteria), so "no controls at all" no
+        # longer holds -- only edit/delete/mark-done remain out of scope
+        # (tracked by #10/#12/#13).
         RecurringChore.objects.create(
             name="Take out trash",
             interval_days=7,
@@ -183,9 +187,7 @@ class HomeViewTests(TestCase):
         response = self.client.get("/")
         content = response.content.decode().lower()
 
-        self.assertNotIn("<form", content)
-        self.assertNotIn("<button", content)
-        for forbidden in ("add", "edit", "delete", "mark done", "mark as done"):
+        for forbidden in ("edit", "delete", "mark done", "mark as done"):
             self.assertNotIn(forbidden, content)
 
     def test_no_fixed_width_table_markup(self):
@@ -341,15 +343,20 @@ class HomeViewTasksTests(TestCase):
         self.assertEqual(names_in_order, ["Clean garage", "Renew passport"])
 
     def test_no_create_edit_complete_or_delete_controls_for_tasks(self):
+        # Scoped to the one-off-tasks section only: #8 adds an add-chore
+        # form to the recurring-chores section, but tasks (#9) remain
+        # entirely read-only, so nothing in that section of the markup
+        # should carry a form/button/control.
         OneOffTask.objects.create(name="Return library book", due_date=self.today)
 
         response = self.client.get("/")
         content = response.content.decode().lower()
+        tasks_section = content.split("one-off tasks", 1)[1]
 
-        self.assertNotIn("<form", content)
-        self.assertNotIn("<button", content)
+        self.assertNotIn("<form", tasks_section)
+        self.assertNotIn("<button", tasks_section)
         for forbidden in ("add", "edit", "delete", "mark done", "mark as done"):
-            self.assertNotIn(forbidden, content)
+            self.assertNotIn(forbidden, tasks_section)
 
     def test_no_fixed_width_table_markup_for_tasks(self):
         OneOffTask.objects.create(name="Return library book", due_date=self.today)

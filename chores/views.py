@@ -1,8 +1,10 @@
 from datetime import date
 
 from django.shortcuts import render
+from django.views.decorators.http import require_POST
 
 from chores.dates import get_today
+from chores.forms import RecurringChoreForm
 from chores.models import OneOffTask, RecurringChore
 from chores.status import Status, get_status
 
@@ -24,9 +26,7 @@ _STATUS_ORDER = {
 _FAR_FUTURE = date.max
 
 
-def home(request):
-    today = get_today()
-
+def _get_sorted_chores(today):
     chores = []
     for chore in RecurringChore.objects.all():
         status = get_status(chore.next_due_date, today)
@@ -51,7 +51,10 @@ def home(request):
             c["id"],
         )
     )
+    return chores
 
+
+def _get_sorted_tasks(today):
     tasks = []
     for task in OneOffTask.objects.all():
         status = get_status(task.due_date, today)
@@ -76,5 +79,41 @@ def home(request):
             t["id"],
         )
     )
+    return tasks
 
-    return render(request, "chores/home.html", {"chores": chores, "tasks": tasks})
+
+def home(request):
+    today = get_today()
+    chores = _get_sorted_chores(today)
+    tasks = _get_sorted_tasks(today)
+    chore_form = RecurringChoreForm()
+
+    return render(
+        request,
+        "chores/home.html",
+        {"chores": chores, "tasks": tasks, "chore_form": chore_form},
+    )
+
+
+@require_POST
+def add_recurring_chore(request):
+    """Create a RecurringChore from the home page's add-chore form (#8).
+
+    Always re-renders the recurring-chores partial (list + form), so an
+    HTMX caller can swap it in place: a fresh, empty form on success, or
+    the same form with bound values/errors on validation failure.
+    """
+    today = get_today()
+    form = RecurringChoreForm(request.POST)
+
+    if form.is_valid():
+        form.save()
+        form = RecurringChoreForm()
+
+    chores = _get_sorted_chores(today)
+
+    return render(
+        request,
+        "chores/_recurring_chores_section.html",
+        {"chores": chores, "chore_form": form},
+    )

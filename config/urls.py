@@ -22,4 +22,9 @@ from chores import views as chores_views
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', chores_views.home, name='home'),
+    path(
+        'recurring-chores/add/',
+        chores_views.add_recurring_chore,
+        name='add_recurring_chore',
+    ),
 ]

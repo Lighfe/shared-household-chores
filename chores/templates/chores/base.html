@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}Household Chores{% endblock %}</title>
     <link rel="stylesheet" href="{% static 'chores/css/base.css' %}">
+    {# Vendored, not CDN-linked: the LAN this app runs on isn't guaranteed #}
+    {# general internet access (same rationale as base.css, see decisions.md). #}
+    <script src="{% static 'chores/js/htmx.min.js' %}" defer></script>
 </head>
 <body>
     <main class="page">
