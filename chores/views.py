@@ -4,7 +4,7 @@ from django.shortcuts import render
 from django.views.decorators.http import require_POST
 
 from chores.dates import get_today
-from chores.forms import RecurringChoreForm
+from chores.forms import OneOffTaskForm, RecurringChoreForm
 from chores.models import OneOffTask, RecurringChore
 from chores.status import Status, get_status
 
@@ -87,11 +87,17 @@ def home(request):
     chores = _get_sorted_chores(today)
     tasks = _get_sorted_tasks(today)
     chore_form = RecurringChoreForm()
+    task_form = OneOffTaskForm()
 
     return render(
         request,
         "chores/home.html",
-        {"chores": chores, "tasks": tasks, "chore_form": chore_form},
+        {
+            "chores": chores,
+            "tasks": tasks,
+            "chore_form": chore_form,
+            "task_form": task_form,
+        },
     )
 
 
@@ -116,4 +122,28 @@ def add_recurring_chore(request):
         request,
         "chores/_recurring_chores_section.html",
         {"chores": chores, "chore_form": form},
+    )
+
+
+@require_POST
+def add_one_off_task(request):
+    """Create a OneOffTask from the home page's add-task form (#9).
+
+    Always re-renders the one-off-tasks partial (list + form), so an HTMX
+    caller can swap it in place: a fresh, empty form on success, or the
+    same form with bound values/errors on validation failure.
+    """
+    today = get_today()
+    form = OneOffTaskForm(request.POST)
+
+    if form.is_valid():
+        form.save()
+        form = OneOffTaskForm()
+
+    tasks = _get_sorted_tasks(today)
+
+    return render(
+        request,
+        "chores/_one_off_tasks_section.html",
+        {"tasks": tasks, "task_form": form},
     )

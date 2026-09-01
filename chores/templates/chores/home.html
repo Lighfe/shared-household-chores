@@ -6,28 +6,5 @@
     {# this markup is restructured later (#5/#6/#8-#13). #}
     {% include "chores/_recurring_chores_section.html" %}
 
-    <h1>One-off Tasks</h1>
-
-    {% if tasks %}
-        <ul class="task-list">
-            {% for task in tasks %}
-                <li class="task task--{{ task.status.value }}">
-                    <div class="task-name">{{ task.name }}</div>
-                    <div class="task-due-date">
-                        Due:
-                        {% if task.due_date %}
-                            {{ task.due_date|date:"Y-m-d" }}
-                        {% else %}
-                            No due date
-                        {% endif %}
-                    </div>
-                    {% if task.due_date %}
-                        <div class="task-status">Status: {{ task.status.value }}</div>
-                    {% endif %}
-                </li>
-            {% endfor %}
-        </ul>
-    {% else %}
-        <p class="empty-state">No one-off tasks yet.</p>
-    {% endif %}
+    {% include "chores/_one_off_tasks_section.html" %}
 {% endblock %}

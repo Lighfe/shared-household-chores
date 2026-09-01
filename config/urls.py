@@ -27,4 +27,9 @@ urlpatterns = [
         chores_views.add_recurring_chore,
         name='add_recurring_chore',
     ),
+    path(
+        'one-off-tasks/add/',
+        chores_views.add_one_off_task,
+        name='add_one_off_task',
+    ),
 ]

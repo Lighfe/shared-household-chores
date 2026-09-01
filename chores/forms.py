@@ -1,6 +1,6 @@
 from django import forms
 
-from chores.models import RecurringChore
+from chores.models import OneOffTask, RecurringChore
 
 
 class RecurringChoreForm(forms.ModelForm):
@@ -27,4 +27,27 @@ class RecurringChoreForm(forms.ModelForm):
             "name": forms.TextInput(attrs={"maxlength": 255}),
             "interval_days": forms.NumberInput(attrs={"min": 1, "step": 1}),
             "next_due_date": forms.DateInput(attrs={"type": "date"}),
+        }
+
+
+class OneOffTaskForm(forms.ModelForm):
+    """Create form for OneOffTask (#9).
+
+    Only exposes name and due_date -- the fields a user sets when creating
+    a one-off task. due_date is optional (null=True, blank=True on the
+    model), matching due_date=None being a valid, non-overdue state (#4).
+    Validation is entirely the model field's own (blank=False on name,
+    optional DateField on due_date) -- no hand-rolled validation logic,
+    per #9's constraints.
+    """
+
+    class Meta:
+        model = OneOffTask
+        fields = ["name", "due_date"]
+        labels = {
+            "due_date": "Due date (optional)",
+        }
+        widgets = {
+            "name": forms.TextInput(attrs={"maxlength": 255}),
+            "due_date": forms.DateInput(attrs={"type": "date"}),
         }

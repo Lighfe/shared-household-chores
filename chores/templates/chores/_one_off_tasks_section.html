@@ -1,0 +1,55 @@
+{# One-off-tasks section: heading, add-task form, and the task list. #}
+{# This whole block is the HTMX swap target/response for the add-task #}
+{# endpoint (#9) -- keep it self-contained (no markup outside this div #}
+{# belongs to the task list) so `hx-swap="outerHTML"` on #one-off-tasks #}
+{# stays correct. #}
+<div id="one-off-tasks">
+    <h1>One-off Tasks</h1>
+
+    <form
+        class="add-task-form"
+        hx-post="{% url 'add_one_off_task' %}"
+        hx-target="#one-off-tasks"
+        hx-swap="outerHTML"
+    >
+        {% csrf_token %}
+        <div class="form-row">
+            <label for="{{ task_form.name.id_for_label }}">{{ task_form.name.label }}</label>
+            {{ task_form.name }}
+            {% for error in task_form.name.errors %}
+                <div class="form-error">{{ error }}</div>
+            {% endfor %}
+        </div>
+        <div class="form-row">
+            <label for="{{ task_form.due_date.id_for_label }}">{{ task_form.due_date.label }}</label>
+            {{ task_form.due_date }}
+            {% for error in task_form.due_date.errors %}
+                <div class="form-error">{{ error }}</div>
+            {% endfor %}
+        </div>
+        <button type="submit">Add task</button>
+    </form>
+
+    {% if tasks %}
+        <ul class="task-list">
+            {% for task in tasks %}
+                <li class="task task--{{ task.status.value }}">
+                    <div class="task-name">{{ task.name }}</div>
+                    <div class="task-due-date">
+                        Due:
+                        {% if task.due_date %}
+                            {{ task.due_date|date:"Y-m-d" }}
+                        {% else %}
+                            No due date
+                        {% endif %}
+                    </div>
+                    {% if task.due_date %}
+                        <div class="task-status">Status: {{ task.status.value }}</div>
+                    {% endif %}
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p class="empty-state">No one-off tasks yet.</p>
+    {% endif %}
+</div>

@@ -342,20 +342,18 @@ class HomeViewTasksTests(TestCase):
 
         self.assertEqual(names_in_order, ["Clean garage", "Renew passport"])
 
-    def test_no_create_edit_complete_or_delete_controls_for_tasks(self):
-        # Scoped to the one-off-tasks section only: #8 adds an add-chore
-        # form to the recurring-chores section, but tasks (#9) remain
-        # entirely read-only, so nothing in that section of the markup
-        # should carry a form/button/control.
+    def test_no_edit_complete_or_delete_controls_for_tasks(self):
+        # Updated by #9: the home page now carries an add-task form (that
+        # issue's own acceptance criteria), so "no controls at all" no
+        # longer holds -- only edit/complete/delete remain out of scope
+        # (tracked by #11).
         OneOffTask.objects.create(name="Return library book", due_date=self.today)
 
         response = self.client.get("/")
         content = response.content.decode().lower()
         tasks_section = content.split("one-off tasks", 1)[1]
 
-        self.assertNotIn("<form", tasks_section)
-        self.assertNotIn("<button", tasks_section)
-        for forbidden in ("add", "edit", "delete", "mark done", "mark as done"):
+        for forbidden in ("edit", "delete", "mark done", "mark as done"):
             self.assertNotIn(forbidden, tasks_section)
 
     def test_no_fixed_width_table_markup_for_tasks(self):
