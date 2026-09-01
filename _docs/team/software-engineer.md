@@ -15,6 +15,7 @@ Definition of done:
 - Tests are written for the new behaviour, and the whole suite passes
 - The work is committed
 - The issue is still open, with a comment saying what you did
+- A new command or constraint worth keeping is named in that comment
 
 If an acceptance criterion is wrong, impossible, or contradicts
 another one, create a comment on the issue about it.

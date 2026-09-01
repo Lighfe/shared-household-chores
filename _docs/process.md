@@ -20,7 +20,7 @@ Lifecycle
 3. Engineer implements it
 4. QA verifies it
 5. On FAIL, back to step 3 with the QA comment as input
-6. On PASS, close the issue
+6. On PASS, apply any flagged command/rule updates (see `_docs/meta.md`), then close the issue
 7. Repeat until the backlog is empty
 
 Rules

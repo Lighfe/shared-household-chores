@@ -3,6 +3,7 @@ Django app for household chores
 Documents
 
 - `_docs/process.md` - how work is organized
+- `_docs/meta.md` - how these docs grow
 
 Commands
 
