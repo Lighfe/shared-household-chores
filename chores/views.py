@@ -181,3 +181,30 @@ def mark_recurring_chore_done(request, chore_id):
         "chores/_recurring_chore_row.html",
         {"chore": row},
     )
+
+
+@require_POST
+def mark_one_off_task_done(request, task_id):
+    """Mark a OneOffTask done by hard-deleting it (#11).
+
+    No `is_done` flag, no archive -- completion just removes the row, per
+    `_docs/plan.md`. Deleting via a filtered queryset (rather than
+    get_object_or_404 + .delete()) makes this idempotent: an id that's
+    already gone (double-submit, stale page) or that never existed simply
+    deletes zero rows instead of raising, so the endpoint always succeeds.
+    Returns the re-rendered one-off-tasks section partial -- not a row --
+    since a deleted row can't swap itself; the client targets
+    #one-off-tasks with hx-swap="outerHTML".
+    """
+    today = get_today()
+
+    OneOffTask.objects.filter(pk=task_id).delete()
+
+    tasks = _get_sorted_tasks(today)
+    task_form = OneOffTaskForm()
+
+    return render(
+        request,
+        "chores/_one_off_tasks_section.html",
+        {"tasks": tasks, "task_form": task_form},
+    )

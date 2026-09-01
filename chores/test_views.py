@@ -354,19 +354,36 @@ class HomeViewTasksTests(TestCase):
 
         self.assertEqual(names_in_order, ["Clean garage", "Renew passport"])
 
-    def test_no_edit_complete_or_delete_controls_for_tasks(self):
+    def test_no_edit_or_delete_controls_for_tasks(self):
         # Updated by #9: the home page now carries an add-task form (that
-        # issue's own acceptance criteria), so "no controls at all" no
-        # longer holds -- only edit/complete/delete remain out of scope
-        # (tracked by #11).
+        # issue's own acceptance criteria). Updated by #11: a "done"
+        # control is now expected on each task row too -- only edit/delete
+        # remain out of scope (a separate cancel/remove control that isn't
+        # "done" is tracked by #18).
         OneOffTask.objects.create(name="Return library book", due_date=self.today)
 
         response = self.client.get("/")
         content = response.content.decode().lower()
         tasks_section = content.split("one-off tasks", 1)[1]
 
-        for forbidden in ("edit", "delete", "mark done", "mark as done"):
+        for forbidden in ("edit", "delete"):
             self.assertNotIn(forbidden, tasks_section)
+
+    def test_task_row_has_done_control(self):
+        OneOffTask.objects.create(name="Return library book", due_date=self.today)
+
+        response = self.client.get("/")
+        content = response.content.decode().lower()
+
+        self.assertIn(">done<", content)
+
+    def test_done_control_asks_for_confirmation_before_deleting(self):
+        OneOffTask.objects.create(name="Return library book", due_date=self.today)
+
+        response = self.client.get("/")
+        content = response.content.decode()
+
+        self.assertIn("hx-confirm", content)
 
     def test_no_fixed_width_table_markup_for_tasks(self):
         OneOffTask.objects.create(name="Return library book", due_date=self.today)

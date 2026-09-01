@@ -37,4 +37,9 @@ urlpatterns = [
         chores_views.mark_recurring_chore_done,
         name='mark_recurring_chore_done',
     ),
+    path(
+        'one-off-tasks/<int:task_id>/done/',
+        chores_views.mark_one_off_task_done,
+        name='mark_one_off_task_done',
+    ),
 ]

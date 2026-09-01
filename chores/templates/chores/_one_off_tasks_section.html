@@ -46,6 +46,16 @@
                     {% if task.due_date %}
                         <div class="task-status">Status: {{ task.status.value }}</div>
                     {% endif %}
+                    <form
+                        class="done-task-form"
+                        hx-post="{% url 'mark_one_off_task_done' task.id %}"
+                        hx-confirm="Mark this task done? This cannot be undone."
+                        hx-target="#one-off-tasks"
+                        hx-swap="outerHTML"
+                    >
+                        {% csrf_token %}
+                        <button type="submit">Done</button>
+                    </form>
                 </li>
             {% endfor %}
         </ul>
