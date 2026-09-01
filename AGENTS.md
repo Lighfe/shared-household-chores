@@ -8,8 +8,8 @@ Documents
 Commands
 
 - `uv sync` - install dependencies
-- `uv run pytest` - the whole suite
-- `uv run pytest tests/test_home.py` - one test file
+- `uv run python manage.py test` - the whole suite
+- `uv run python manage.py test chores` - one app's tests
 
 Rules
 
