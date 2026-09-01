@@ -26,6 +26,13 @@
                 <div class="form-error">{{ error }}</div>
             {% endfor %}
         </div>
+        <div class="form-row">
+            <label for="{{ chore_edit_form.next_due_date.id_for_label }}">{{ chore_edit_form.next_due_date.label }}</label>
+            {{ chore_edit_form.next_due_date }}
+            {% for error in chore_edit_form.next_due_date.errors %}
+                <div class="form-error">{{ error }}</div>
+            {% endfor %}
+        </div>
         <button type="submit">Save</button>
         {# Cancel sits outside the <form> so it never submits it; GET, #}
         {# never modifies data -- just swaps back to the view-mode row. #}

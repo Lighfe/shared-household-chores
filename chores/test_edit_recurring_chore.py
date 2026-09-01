@@ -77,7 +77,11 @@ class EditRecurringChoreSaveTests(TestCase):
     def test_valid_submission_updates_name_and_interval(self):
         response = self.client.post(
             edit_url(self.chore.id),
-            {"name": "Take out recycling", "interval_days": "14"},
+            {
+                "name": "Take out recycling",
+                "interval_days": "14",
+                "next_due_date": self.today.isoformat(),
+            },
         )
 
         self.assertEqual(response.status_code, 200)
@@ -91,7 +95,11 @@ class EditRecurringChoreSaveTests(TestCase):
 
         self.client.post(
             edit_url(self.chore.id),
-            {"name": "Take out trash", "interval_days": "30"},
+            {
+                "name": "Take out trash",
+                "interval_days": "30",
+                "next_due_date": original_next_due.isoformat(),
+            },
         )
 
         self.chore.refresh_from_db()
@@ -101,7 +109,11 @@ class EditRecurringChoreSaveTests(TestCase):
     def test_response_is_the_updated_row_partial_not_redirect(self):
         response = self.client.post(
             edit_url(self.chore.id),
-            {"name": "Take out recycling", "interval_days": "14"},
+            {
+                "name": "Take out recycling",
+                "interval_days": "14",
+                "next_due_date": self.today.isoformat(),
+            },
         )
 
         self.assertTemplateUsed(response, "chores/_recurring_chore_row.html")
@@ -135,7 +147,11 @@ class EditRecurringChoreSaveTests(TestCase):
 
         response = self.client.post(
             edit_url(self.chore.id),
-            {"name": "Existing chore", "interval_days": "7"},
+            {
+                "name": "Existing chore",
+                "interval_days": "7",
+                "next_due_date": self.today.isoformat(),
+            },
         )
 
         self.assertEqual(response.status_code, 200)
@@ -148,7 +164,11 @@ class EditRecurringChoreSaveTests(TestCase):
     def test_submitting_unchanged_values_succeeds_as_a_no_op(self):
         response = self.client.post(
             edit_url(self.chore.id),
-            {"name": "Take out trash", "interval_days": "7"},
+            {
+                "name": "Take out trash",
+                "interval_days": "7",
+                "next_due_date": self.today.isoformat(),
+            },
         )
 
         self.assertEqual(response.status_code, 200)
@@ -177,7 +197,11 @@ class EditRecurringChoreSaveTests(TestCase):
     def test_editing_twice_in_a_row_shows_fresh_values_second_time(self):
         self.client.post(
             edit_url(self.chore.id),
-            {"name": "First edit", "interval_days": "10"},
+            {
+                "name": "First edit",
+                "interval_days": "10",
+                "next_due_date": self.today.isoformat(),
+            },
         )
 
         response = self.client.get(edit_url(self.chore.id))
@@ -200,7 +224,11 @@ class EditRecurringChoreValidationTests(TestCase):
     def test_empty_name_is_rejected_and_preserves_interval(self):
         response = self.client.post(
             edit_url(self.chore.id),
-            {"name": "", "interval_days": "14"},
+            {
+                "name": "",
+                "interval_days": "14",
+                "next_due_date": self.today.isoformat(),
+            },
         )
 
         self.chore.refresh_from_db()
@@ -213,7 +241,11 @@ class EditRecurringChoreValidationTests(TestCase):
     def test_blank_interval_is_rejected_and_preserves_name(self):
         response = self.client.post(
             edit_url(self.chore.id),
-            {"name": "New name", "interval_days": ""},
+            {
+                "name": "New name",
+                "interval_days": "",
+                "next_due_date": self.today.isoformat(),
+            },
         )
 
         self.chore.refresh_from_db()
@@ -225,7 +257,11 @@ class EditRecurringChoreValidationTests(TestCase):
     def test_zero_interval_is_rejected(self):
         response = self.client.post(
             edit_url(self.chore.id),
-            {"name": "New name", "interval_days": "0"},
+            {
+                "name": "New name",
+                "interval_days": "0",
+                "next_due_date": self.today.isoformat(),
+            },
         )
 
         self.chore.refresh_from_db()
@@ -235,7 +271,11 @@ class EditRecurringChoreValidationTests(TestCase):
     def test_negative_interval_is_rejected(self):
         response = self.client.post(
             edit_url(self.chore.id),
-            {"name": "New name", "interval_days": "-3"},
+            {
+                "name": "New name",
+                "interval_days": "-3",
+                "next_due_date": self.today.isoformat(),
+            },
         )
 
         self.chore.refresh_from_db()
@@ -245,7 +285,11 @@ class EditRecurringChoreValidationTests(TestCase):
     def test_non_numeric_interval_is_rejected(self):
         response = self.client.post(
             edit_url(self.chore.id),
-            {"name": "New name", "interval_days": "abc"},
+            {
+                "name": "New name",
+                "interval_days": "abc",
+                "next_due_date": self.today.isoformat(),
+            },
         )
 
         self.chore.refresh_from_db()
@@ -290,3 +334,202 @@ class CancelEditRecurringChoreTests(TestCase):
         response = self.client.post(cancel_url(self.chore.id))
 
         self.assertEqual(response.status_code, 405)
+
+
+class EditRecurringChoreNextDueDateTests(TestCase):
+    """#16: the edit form also exposes next_due_date."""
+
+    def setUp(self):
+        self.client = Client()
+        self.today = get_today()
+        self.chore = RecurringChore.objects.create(
+            name="Take out trash",
+            interval_days=7,
+            next_due_date=self.today,
+            last_done_date=self.today - datetime.timedelta(days=7),
+        )
+
+    def test_get_edit_form_is_prefilled_with_current_next_due_date(self):
+        response = self.client.get(edit_url(self.chore.id))
+
+        self.assertContains(response, 'name="next_due_date"')
+        self.assertContains(response, f'value="{self.today.isoformat()}"')
+
+    def test_valid_next_due_date_alone_updates_it(self):
+        new_due = self.today + datetime.timedelta(days=21)
+
+        response = self.client.post(
+            edit_url(self.chore.id),
+            {
+                "name": "Take out trash",
+                "interval_days": "7",
+                "next_due_date": new_due.isoformat(),
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.chore.refresh_from_db()
+        self.assertEqual(self.chore.next_due_date, new_due)
+
+    def test_next_due_date_change_combined_with_name_and_interval_change(self):
+        new_due = self.today + datetime.timedelta(days=3)
+
+        response = self.client.post(
+            edit_url(self.chore.id),
+            {
+                "name": "Take out recycling",
+                "interval_days": "14",
+                "next_due_date": new_due.isoformat(),
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.chore.refresh_from_db()
+        self.assertEqual(self.chore.name, "Take out recycling")
+        self.assertEqual(self.chore.interval_days, 14)
+        self.assertEqual(self.chore.next_due_date, new_due)
+
+    def test_past_next_due_date_is_accepted_and_saved(self):
+        past_due = self.today - datetime.timedelta(days=10)
+
+        response = self.client.post(
+            edit_url(self.chore.id),
+            {
+                "name": "Take out trash",
+                "interval_days": "7",
+                "next_due_date": past_due.isoformat(),
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.chore.refresh_from_db()
+        self.assertEqual(self.chore.next_due_date, past_due)
+
+    def test_blank_next_due_date_is_rejected_and_preserves_name_and_interval(self):
+        response = self.client.post(
+            edit_url(self.chore.id),
+            {
+                "name": "New name",
+                "interval_days": "14",
+                "next_due_date": "",
+            },
+        )
+
+        self.chore.refresh_from_db()
+        self.assertEqual(self.chore.name, "Take out trash")
+        self.assertEqual(self.chore.interval_days, 7)
+        self.assertEqual(self.chore.next_due_date, self.today)
+        self.assertContains(response, "This field is required.")
+        self.assertContains(response, 'value="New name"')
+        self.assertContains(response, 'value="14"')
+        self.assertTemplateUsed(response, "chores/_recurring_chore_edit_row.html")
+
+    def test_malformed_next_due_date_is_rejected_and_preserves_other_fields(self):
+        response = self.client.post(
+            edit_url(self.chore.id),
+            {
+                "name": "New name",
+                "interval_days": "14",
+                "next_due_date": "2026-02-31",
+            },
+        )
+
+        self.chore.refresh_from_db()
+        self.assertEqual(self.chore.next_due_date, self.today)
+        self.assertContains(response, "Enter a valid date.")
+        self.assertContains(response, 'value="New name"')
+        self.assertContains(response, 'value="14"')
+        self.assertTemplateUsed(response, "chores/_recurring_chore_edit_row.html")
+
+    def test_next_due_date_change_does_not_modify_last_done_date(self):
+        original_last_done = self.chore.last_done_date
+        new_due = self.today + datetime.timedelta(days=21)
+
+        self.client.post(
+            edit_url(self.chore.id),
+            {
+                "name": "Take out trash",
+                "interval_days": "7",
+                "next_due_date": new_due.isoformat(),
+            },
+        )
+
+        self.chore.refresh_from_db()
+        self.assertEqual(self.chore.last_done_date, original_last_done)
+
+    def test_unchanged_next_due_date_succeeds_as_a_no_op(self):
+        response = self.client.post(
+            edit_url(self.chore.id),
+            {
+                "name": "Take out trash",
+                "interval_days": "7",
+                "next_due_date": self.today.isoformat(),
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.chore.refresh_from_db()
+        self.assertEqual(self.chore.next_due_date, self.today)
+
+    def test_successful_next_due_date_change_moves_chore_in_sort_order(self):
+        RecurringChore.objects.create(
+            name="Other chore",
+            interval_days=5,
+            next_due_date=self.today + datetime.timedelta(days=2),
+        )
+        # Push our chore's due date far into the future so it now sorts
+        # after "Other chore" instead of before/with it.
+        far_future = self.today + datetime.timedelta(days=30)
+
+        self.client.post(
+            edit_url(self.chore.id),
+            {
+                "name": "Take out trash",
+                "interval_days": "7",
+                "next_due_date": far_future.isoformat(),
+            },
+        )
+
+        response = self.client.get("/")
+        content = response.content.decode()
+        other_pos = content.index("Other chore")
+        trash_pos = content.index("Take out trash")
+        self.assertTrue(other_pos < trash_pos)
+
+    def test_next_due_date_change_updates_status_label(self):
+        overdue_due = self.today - datetime.timedelta(days=5)
+
+        response = self.client.post(
+            edit_url(self.chore.id),
+            {
+                "name": "Take out trash",
+                "interval_days": "7",
+                "next_due_date": overdue_due.isoformat(),
+            },
+        )
+
+        self.assertContains(response, "overdue")
+
+    def test_manual_next_due_date_edit_is_used_as_previous_value_on_next_mark_done(self):
+        manually_set_due = self.today + datetime.timedelta(days=21)
+
+        self.client.post(
+            edit_url(self.chore.id),
+            {
+                "name": "Take out trash",
+                "interval_days": "7",
+                "next_due_date": manually_set_due.isoformat(),
+            },
+        )
+
+        mark_done_url = reverse(
+            "mark_recurring_chore_done", args=[self.chore.id]
+        )
+        self.client.post(mark_done_url)
+
+        self.chore.refresh_from_db()
+        self.assertEqual(
+            self.chore.next_due_date,
+            manually_set_due + datetime.timedelta(days=7),
+        )
+        self.assertEqual(self.chore.last_done_date, self.today)

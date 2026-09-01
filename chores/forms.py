@@ -31,26 +31,31 @@ class RecurringChoreForm(forms.ModelForm):
 
 
 class RecurringChoreEditForm(forms.ModelForm):
-    """Edit form for an existing RecurringChore's name/interval_days (#12).
+    """Edit form for an existing RecurringChore's name/interval_days/next_due_date (#12, #16).
 
-    Deliberately restricted to name and interval_days -- excludes
-    next_due_date and last_done_date. Per the "editing doesn't touch the
-    current cycle" decision, this form edits the schedule going forward
-    only: next_due_date stays whatever it already was, and only the next
-    mark-done (#10) uses the newly saved interval_days. Manual
-    next_due_date correction is #16, a later extension of this same form
-    -- do not add that field here.
+    Exposes name, interval_days, and next_due_date -- excludes
+    last_done_date. Per the "editing doesn't touch the current cycle"
+    decision, editing name/interval_days alone edits the schedule going
+    forward only: next_due_date is left untouched unless the user
+    explicitly changes it here, and last_done_date is never touched by
+    this form regardless of which fields change (#16). next_due_date uses
+    the model's own required DateField validation -- no hand-rolled date
+    parsing, and no "must be today or later" restriction, since a
+    deliberately past date (marking a chore overdue) is a valid, truthful
+    value.
     """
 
     class Meta:
         model = RecurringChore
-        fields = ["name", "interval_days"]
+        fields = ["name", "interval_days", "next_due_date"]
         labels = {
             "interval_days": "Interval (days)",
+            "next_due_date": "Next due date",
         }
         widgets = {
             "name": forms.TextInput(attrs={"maxlength": 255}),
             "interval_days": forms.NumberInput(attrs={"min": 1, "step": 1}),
+            "next_due_date": forms.DateInput(attrs={"type": "date"}),
         }
 
 
