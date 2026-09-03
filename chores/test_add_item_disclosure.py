@@ -44,6 +44,7 @@ class AddChoreDisclosureTests(TestCase):
                 "name": "Take out trash",
                 "interval_days": "7",
                 "next_due_date": self.today.isoformat(),
+                "priority": "medium",
             },
         )
 
@@ -61,6 +62,7 @@ class AddChoreDisclosureTests(TestCase):
                 "name": "",
                 "interval_days": "7",
                 "next_due_date": self.today.isoformat(),
+                "priority": "medium",
             },
         )
 
@@ -114,6 +116,7 @@ class AddTaskDisclosureTests(TestCase):
             {
                 "name": "Return library book",
                 "due_date": self.today.isoformat(),
+                "priority": "medium",
             },
         )
 
@@ -130,6 +133,7 @@ class AddTaskDisclosureTests(TestCase):
             {
                 "name": "",
                 "due_date": self.today.isoformat(),
+                "priority": "medium",
             },
         )
 

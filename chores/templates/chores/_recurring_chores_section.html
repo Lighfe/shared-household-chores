@@ -72,6 +72,13 @@
                     <div class="form-error">{{ error }}</div>
                 {% endfor %}
             </div>
+            <div class="form-row">
+                <label for="{{ chore_form.priority.id_for_label }}">{{ chore_form.priority.label }}</label>
+                {{ chore_form.priority }}
+                {% for error in chore_form.priority.errors %}
+                    <div class="form-error">{{ error }}</div>
+                {% endfor %}
+            </div>
             <button type="submit">Add chore</button>
         </form>
     </details>

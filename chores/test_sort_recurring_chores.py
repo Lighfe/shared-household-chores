@@ -248,6 +248,7 @@ class SortDoesNotAffectStoredDataOrOtherSectionsTests(TestCase):
                 "interval_days": 7,
                 "next_due_date": self.today.isoformat(),
                 "sort": "name",
+                "priority": "medium",
             },
         )
 

@@ -45,6 +45,7 @@ def _chore_row(chore, today):
         "next_due_date": chore.next_due_date,
         "last_done_date": chore.last_done_date,
         "status": get_status(chore.next_due_date, today),
+        "priority": chore.get_priority_display(),
         "id": chore.id,
     }
 
@@ -69,6 +70,7 @@ def _get_sorted_chores(today, sort="default"):
                 "next_due_date": chore.next_due_date,
                 "last_done_date": chore.last_done_date,
                 "status": status,
+                "priority": chore.get_priority_display(),
                 "id": chore.id,
             }
         )
@@ -99,6 +101,7 @@ def _get_sorted_tasks(today):
                 "name": task.name,
                 "due_date": task.due_date,
                 "status": status,
+                "priority": task.get_priority_display(),
                 "id": task.id,
             }
         )

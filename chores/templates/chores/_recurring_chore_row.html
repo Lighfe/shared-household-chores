@@ -5,6 +5,7 @@
 <li id="chore-row-{{ chore.id }}" class="chore chore--{{ chore.status.value }}">
     <div class="chore-name">{{ chore.name }}</div>
     <div class="chore-status">Status: {{ chore.status.value }}</div>
+    <div class="chore-priority">Priority: {{ chore.priority }}</div>
     <div class="chore-next-due">Next due: {{ chore.next_due_date|date:"Y-m-d" }}</div>
     <div class="chore-last-done">
         Last done:

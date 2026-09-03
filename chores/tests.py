@@ -3,9 +3,11 @@ import datetime
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.test import Client, TestCase
+from django.urls import reverse
 
 from chores.dates import get_today
-from chores.models import OneOffTask, RecurringChore
+from chores.forms import OneOffTaskForm, RecurringChoreEditForm, RecurringChoreForm
+from chores.models import OneOffTask, Priority, RecurringChore
 
 
 class RecurringChoreModelTest(TestCase):
@@ -74,6 +76,40 @@ class RecurringChoreModelTest(TestCase):
 
         self.assertEqual(str(chore), "Take out trash")
 
+    def test_priority_defaults_to_medium_when_not_specified(self):
+        chore = RecurringChore.objects.create(
+            name="Water plants",
+            interval_days=3,
+            next_due_date=datetime.date(2026, 9, 4),
+        )
+
+        reloaded = RecurringChore.objects.get(pk=chore.pk)
+
+        self.assertEqual(reloaded.priority, Priority.MEDIUM)
+
+    def test_priority_can_be_set_explicitly_and_reloads(self):
+        chore = RecurringChore.objects.create(
+            name="Water plants",
+            interval_days=3,
+            next_due_date=datetime.date(2026, 9, 4),
+            priority=Priority.HIGH,
+        )
+
+        reloaded = RecurringChore.objects.get(pk=chore.pk)
+
+        self.assertEqual(reloaded.priority, Priority.HIGH)
+
+    def test_invalid_priority_value_is_rejected(self):
+        chore = RecurringChore(
+            name="Water plants",
+            interval_days=3,
+            next_due_date=datetime.date(2026, 9, 4),
+            priority="urgent",
+        )
+
+        with self.assertRaises(ValidationError):
+            chore.full_clean()
+
 
 class OneOffTaskModelTest(TestCase):
     def test_create_with_due_date_saves_and_reloads(self):
@@ -109,6 +145,28 @@ class OneOffTaskModelTest(TestCase):
         task = OneOffTask(name="Fix the leaky faucet")
 
         self.assertEqual(str(task), "Fix the leaky faucet")
+
+    def test_priority_defaults_to_medium_when_not_specified(self):
+        task = OneOffTask.objects.create(name="Clean out the garage")
+
+        reloaded = OneOffTask.objects.get(pk=task.pk)
+
+        self.assertEqual(reloaded.priority, Priority.MEDIUM)
+
+    def test_priority_can_be_set_explicitly_and_reloads(self):
+        task = OneOffTask.objects.create(
+            name="Clean out the garage", priority=Priority.LOW
+        )
+
+        reloaded = OneOffTask.objects.get(pk=task.pk)
+
+        self.assertEqual(reloaded.priority, Priority.LOW)
+
+    def test_invalid_priority_value_is_rejected(self):
+        task = OneOffTask(name="Clean out the garage", priority="urgent")
+
+        with self.assertRaises(ValidationError):
+            task.full_clean()
 
 
 class MarkRecurringChoreDoneTests(TestCase):
@@ -494,6 +552,174 @@ class CancelOneOffTaskTests(TestCase):
 
         self.assertEqual(response.status_code, 403)
         self.assertTrue(OneOffTask.objects.filter(pk=task.pk).exists())
+
+
+class RecurringChoreFormPriorityTests(TestCase):
+    """Priority field on the add-chore and edit-chore forms (#22)."""
+
+    def test_add_form_pre_selects_medium_when_unbound(self):
+        form = RecurringChoreForm()
+
+        self.assertEqual(form["priority"].value(), Priority.MEDIUM)
+
+    def test_edit_form_pre_fills_the_chores_current_priority(self):
+        chore = RecurringChore.objects.create(
+            name="Take out trash",
+            interval_days=7,
+            next_due_date=datetime.date(2026, 9, 8),
+            priority=Priority.HIGH,
+        )
+
+        form = RecurringChoreEditForm(instance=chore)
+
+        self.assertEqual(form["priority"].value(), Priority.HIGH)
+
+    def test_submitting_without_touching_priority_saves_the_default(self):
+        response = Client().post(
+            reverse("add_recurring_chore"),
+            {
+                "name": "Take out trash",
+                "interval_days": "7",
+                "next_due_date": "2026-09-08",
+                "priority": Priority.MEDIUM,
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        chore = RecurringChore.objects.get(name="Take out trash")
+        self.assertEqual(chore.priority, Priority.MEDIUM)
+
+    def test_submitting_a_non_default_priority_saves_it(self):
+        response = Client().post(
+            reverse("add_recurring_chore"),
+            {
+                "name": "Take out trash",
+                "interval_days": "7",
+                "next_due_date": "2026-09-08",
+                "priority": Priority.LOW,
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        chore = RecurringChore.objects.get(name="Take out trash")
+        self.assertEqual(chore.priority, Priority.LOW)
+
+    def test_tampered_priority_value_is_rejected_with_validation_error(self):
+        response = Client().post(
+            reverse("add_recurring_chore"),
+            {
+                "name": "Take out trash",
+                "interval_days": "7",
+                "next_due_date": "2026-09-08",
+                "priority": "urgent",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(RecurringChore.objects.filter(name="Take out trash").exists())
+        self.assertContains(
+            response, "Select a valid choice. urgent is not one of the available choices."
+        )
+        # Other entered values are preserved on the re-rendered form.
+        self.assertContains(response, 'value="Take out trash"')
+
+    def test_editing_a_chore_updates_its_priority(self):
+        chore = RecurringChore.objects.create(
+            name="Take out trash",
+            interval_days=7,
+            next_due_date=datetime.date(2026, 9, 8),
+            priority=Priority.MEDIUM,
+        )
+
+        response = Client().post(
+            reverse("edit_recurring_chore", args=[chore.id]),
+            {
+                "name": chore.name,
+                "interval_days": "7",
+                "next_due_date": "2026-09-08",
+                "priority": Priority.HIGH,
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        chore.refresh_from_db()
+        self.assertEqual(chore.priority, Priority.HIGH)
+
+    def test_rendered_chore_row_displays_its_priority(self):
+        RecurringChore.objects.create(
+            name="Take out trash",
+            interval_days=7,
+            next_due_date=datetime.date(2026, 9, 8),
+            priority=Priority.HIGH,
+        )
+
+        response = Client().get("/")
+
+        self.assertContains(response, "Priority: High")
+
+
+class OneOffTaskFormPriorityTests(TestCase):
+    """Priority field on the add-task form (#22)."""
+
+    def test_add_form_pre_selects_medium_when_unbound(self):
+        form = OneOffTaskForm()
+
+        self.assertEqual(form["priority"].value(), Priority.MEDIUM)
+
+    def test_submitting_without_touching_priority_saves_the_default(self):
+        response = Client().post(
+            reverse("add_one_off_task"),
+            {
+                "name": "Return library books",
+                "due_date": "",
+                "priority": Priority.MEDIUM,
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        task = OneOffTask.objects.get(name="Return library books")
+        self.assertEqual(task.priority, Priority.MEDIUM)
+
+    def test_submitting_a_non_default_priority_saves_it(self):
+        response = Client().post(
+            reverse("add_one_off_task"),
+            {
+                "name": "Return library books",
+                "due_date": "",
+                "priority": Priority.LOW,
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        task = OneOffTask.objects.get(name="Return library books")
+        self.assertEqual(task.priority, Priority.LOW)
+
+    def test_tampered_priority_value_is_rejected_with_validation_error(self):
+        response = Client().post(
+            reverse("add_one_off_task"),
+            {
+                "name": "Return library books",
+                "due_date": "",
+                "priority": "urgent",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(
+            OneOffTask.objects.filter(name="Return library books").exists()
+        )
+        self.assertContains(
+            response, "Select a valid choice. urgent is not one of the available choices."
+        )
+        # Other entered values are preserved on the re-rendered form.
+        self.assertContains(response, 'value="Return library books"')
+
+    def test_rendered_task_row_displays_its_priority(self):
+        OneOffTask.objects.create(name="Return library books", priority=Priority.LOW)
+
+        response = Client().get("/")
+
+        self.assertContains(response, "Priority: Low")
 
 
 class SmokeTest(TestCase):

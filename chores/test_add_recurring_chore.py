@@ -49,6 +49,7 @@ class AddRecurringChoreCreationTests(TestCase):
                 "name": "Take out trash",
                 "interval_days": "7",
                 "next_due_date": self.today.isoformat(),
+                "priority": "medium",
             },
         )
 
@@ -65,6 +66,7 @@ class AddRecurringChoreCreationTests(TestCase):
                 "name": "Take out trash",
                 "interval_days": "7",
                 "next_due_date": self.today.isoformat(),
+                "priority": "medium",
             },
         )
 
@@ -90,6 +92,7 @@ class AddRecurringChoreCreationTests(TestCase):
                 "name": "Due today chore",
                 "interval_days": "7",
                 "next_due_date": self.today.isoformat(),
+                "priority": "medium",
             },
         )
 
@@ -106,6 +109,7 @@ class AddRecurringChoreCreationTests(TestCase):
                 "name": "Take out trash",
                 "interval_days": "7",
                 "next_due_date": self.today.isoformat(),
+                "priority": "medium",
             },
         )
 
@@ -128,6 +132,7 @@ class AddRecurringChoreCreationTests(TestCase):
                 "name": "Take out trash",
                 "interval_days": "3",
                 "next_due_date": self.today.isoformat(),
+                "priority": "medium",
             },
         )
 
@@ -144,6 +149,7 @@ class AddRecurringChoreCreationTests(TestCase):
                 "next_due_date": (
                     self.today - datetime.timedelta(days=3)
                 ).isoformat(),
+                "priority": "medium",
             },
         )
 
@@ -161,6 +167,7 @@ class AddRecurringChoreCreationTests(TestCase):
                 "next_due_date": (
                     self.today + datetime.timedelta(days=3650)
                 ).isoformat(),
+                "priority": "medium",
             },
         )
 
@@ -188,6 +195,7 @@ class AddRecurringChoreValidationTests(TestCase):
                 "name": "",
                 "interval_days": "7",
                 "next_due_date": self.today.isoformat(),
+                "priority": "medium",
             },
         )
 
@@ -203,6 +211,7 @@ class AddRecurringChoreValidationTests(TestCase):
                 "name": "Take out trash",
                 "interval_days": "",
                 "next_due_date": self.today.isoformat(),
+                "priority": "medium",
             },
         )
 
@@ -217,6 +226,7 @@ class AddRecurringChoreValidationTests(TestCase):
                 "name": "Take out trash",
                 "interval_days": "0",
                 "next_due_date": self.today.isoformat(),
+                "priority": "medium",
             },
         )
 
@@ -230,6 +240,7 @@ class AddRecurringChoreValidationTests(TestCase):
                 "name": "Take out trash",
                 "interval_days": "-3",
                 "next_due_date": self.today.isoformat(),
+                "priority": "medium",
             },
         )
 
@@ -243,6 +254,7 @@ class AddRecurringChoreValidationTests(TestCase):
                 "name": "Take out trash",
                 "interval_days": "abc",
                 "next_due_date": self.today.isoformat(),
+                "priority": "medium",
             },
         )
 
@@ -256,6 +268,7 @@ class AddRecurringChoreValidationTests(TestCase):
                 "name": "Take out trash",
                 "interval_days": "7",
                 "next_due_date": "",
+                "priority": "medium",
             },
         )
 
@@ -271,6 +284,7 @@ class AddRecurringChoreValidationTests(TestCase):
                 "name": "Take out trash",
                 "interval_days": "7",
                 "next_due_date": "not-a-date",
+                "priority": "medium",
             },
         )
 

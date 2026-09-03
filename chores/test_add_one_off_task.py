@@ -47,6 +47,7 @@ class AddOneOffTaskCreationTests(TestCase):
             {
                 "name": "Return library book",
                 "due_date": self.today.isoformat(),
+                "priority": "medium",
             },
         )
 
@@ -60,6 +61,7 @@ class AddOneOffTaskCreationTests(TestCase):
             {
                 "name": "Renew passport",
                 "due_date": "",
+                "priority": "medium",
             },
         )
 
@@ -74,6 +76,7 @@ class AddOneOffTaskCreationTests(TestCase):
             {
                 "name": "Return library book",
                 "due_date": self.today.isoformat(),
+                "priority": "medium",
             },
         )
 
@@ -90,6 +93,7 @@ class AddOneOffTaskCreationTests(TestCase):
             {
                 "name": "Return library book",
                 "due_date": self.today.isoformat(),
+                "priority": "medium",
             },
         )
 
@@ -111,6 +115,7 @@ class AddOneOffTaskCreationTests(TestCase):
             {
                 "name": "Due today task",
                 "due_date": self.today.isoformat(),
+                "priority": "medium",
             },
         )
 
@@ -126,6 +131,7 @@ class AddOneOffTaskCreationTests(TestCase):
             {
                 "name": "Return library book",
                 "due_date": self.today.isoformat(),
+                "priority": "medium",
             },
         )
 
@@ -143,6 +149,7 @@ class AddOneOffTaskCreationTests(TestCase):
             {
                 "name": "Return library book",
                 "due_date": self.today.isoformat(),
+                "priority": "medium",
             },
         )
 
@@ -156,6 +163,7 @@ class AddOneOffTaskCreationTests(TestCase):
             {
                 "name": "Overdue on creation",
                 "due_date": (self.today - datetime.timedelta(days=3)).isoformat(),
+                "priority": "medium",
             },
         )
 
@@ -172,6 +180,7 @@ class AddOneOffTaskCreationTests(TestCase):
                 "due_date": (
                     self.today + datetime.timedelta(days=3650)
                 ).isoformat(),
+                "priority": "medium",
             },
         )
 
@@ -190,6 +199,7 @@ class AddOneOffTaskCreationTests(TestCase):
             {
                 "name": "Return library book",
                 "due_date": self.today.isoformat(),
+                "priority": "medium",
             },
         )
 
@@ -208,6 +218,7 @@ class AddOneOffTaskValidationTests(TestCase):
             {
                 "name": "",
                 "due_date": self.today.isoformat(),
+                "priority": "medium",
             },
         )
 
@@ -221,6 +232,7 @@ class AddOneOffTaskValidationTests(TestCase):
             {
                 "name": "   ",
                 "due_date": self.today.isoformat(),
+                "priority": "medium",
             },
         )
 
@@ -233,6 +245,7 @@ class AddOneOffTaskValidationTests(TestCase):
             {
                 "name": "Return library book",
                 "due_date": "not-a-date",
+                "priority": "medium",
             },
         )
 
@@ -248,6 +261,7 @@ class AddOneOffTaskValidationTests(TestCase):
             {
                 "name": "",
                 "due_date": self.today.isoformat(),
+                "priority": "medium",
             },
         )
 

@@ -81,6 +81,7 @@ class EditRecurringChoreSaveTests(TestCase):
                 "name": "Take out recycling",
                 "interval_days": "14",
                 "next_due_date": self.today.isoformat(),
+                "priority": "medium",
             },
         )
 
@@ -99,6 +100,7 @@ class EditRecurringChoreSaveTests(TestCase):
                 "name": "Take out trash",
                 "interval_days": "30",
                 "next_due_date": original_next_due.isoformat(),
+                "priority": "medium",
             },
         )
 
@@ -113,6 +115,7 @@ class EditRecurringChoreSaveTests(TestCase):
                 "name": "Take out recycling",
                 "interval_days": "14",
                 "next_due_date": self.today.isoformat(),
+                "priority": "medium",
             },
         )
 
@@ -151,6 +154,7 @@ class EditRecurringChoreSaveTests(TestCase):
                 "name": "Existing chore",
                 "interval_days": "7",
                 "next_due_date": self.today.isoformat(),
+                "priority": "medium",
             },
         )
 
@@ -168,6 +172,7 @@ class EditRecurringChoreSaveTests(TestCase):
                 "name": "Take out trash",
                 "interval_days": "7",
                 "next_due_date": self.today.isoformat(),
+                "priority": "medium",
             },
         )
 
@@ -187,7 +192,7 @@ class EditRecurringChoreSaveTests(TestCase):
     def test_post_to_missing_chore_returns_404_and_creates_nothing(self):
         response = self.client.post(
             edit_url(999999),
-            {"name": "Ghost chore", "interval_days": "7"},
+            {"name": "Ghost chore", "interval_days": "7", "priority": "medium"},
         )
 
         self.assertEqual(response.status_code, 404)
@@ -201,6 +206,7 @@ class EditRecurringChoreSaveTests(TestCase):
                 "name": "First edit",
                 "interval_days": "10",
                 "next_due_date": self.today.isoformat(),
+                "priority": "medium",
             },
         )
 
@@ -228,6 +234,7 @@ class EditRecurringChoreValidationTests(TestCase):
                 "name": "",
                 "interval_days": "14",
                 "next_due_date": self.today.isoformat(),
+                "priority": "medium",
             },
         )
 
@@ -245,6 +252,7 @@ class EditRecurringChoreValidationTests(TestCase):
                 "name": "New name",
                 "interval_days": "",
                 "next_due_date": self.today.isoformat(),
+                "priority": "medium",
             },
         )
 
@@ -261,6 +269,7 @@ class EditRecurringChoreValidationTests(TestCase):
                 "name": "New name",
                 "interval_days": "0",
                 "next_due_date": self.today.isoformat(),
+                "priority": "medium",
             },
         )
 
@@ -275,6 +284,7 @@ class EditRecurringChoreValidationTests(TestCase):
                 "name": "New name",
                 "interval_days": "-3",
                 "next_due_date": self.today.isoformat(),
+                "priority": "medium",
             },
         )
 
@@ -289,6 +299,7 @@ class EditRecurringChoreValidationTests(TestCase):
                 "name": "New name",
                 "interval_days": "abc",
                 "next_due_date": self.today.isoformat(),
+                "priority": "medium",
             },
         )
 
@@ -364,6 +375,7 @@ class EditRecurringChoreNextDueDateTests(TestCase):
                 "name": "Take out trash",
                 "interval_days": "7",
                 "next_due_date": new_due.isoformat(),
+                "priority": "medium",
             },
         )
 
@@ -380,6 +392,7 @@ class EditRecurringChoreNextDueDateTests(TestCase):
                 "name": "Take out recycling",
                 "interval_days": "14",
                 "next_due_date": new_due.isoformat(),
+                "priority": "medium",
             },
         )
 
@@ -398,6 +411,7 @@ class EditRecurringChoreNextDueDateTests(TestCase):
                 "name": "Take out trash",
                 "interval_days": "7",
                 "next_due_date": past_due.isoformat(),
+                "priority": "medium",
             },
         )
 
@@ -412,6 +426,7 @@ class EditRecurringChoreNextDueDateTests(TestCase):
                 "name": "New name",
                 "interval_days": "14",
                 "next_due_date": "",
+                "priority": "medium",
             },
         )
 
@@ -431,6 +446,7 @@ class EditRecurringChoreNextDueDateTests(TestCase):
                 "name": "New name",
                 "interval_days": "14",
                 "next_due_date": "2026-02-31",
+                "priority": "medium",
             },
         )
 
@@ -451,6 +467,7 @@ class EditRecurringChoreNextDueDateTests(TestCase):
                 "name": "Take out trash",
                 "interval_days": "7",
                 "next_due_date": new_due.isoformat(),
+                "priority": "medium",
             },
         )
 
@@ -464,6 +481,7 @@ class EditRecurringChoreNextDueDateTests(TestCase):
                 "name": "Take out trash",
                 "interval_days": "7",
                 "next_due_date": self.today.isoformat(),
+                "priority": "medium",
             },
         )
 
@@ -487,6 +505,7 @@ class EditRecurringChoreNextDueDateTests(TestCase):
                 "name": "Take out trash",
                 "interval_days": "7",
                 "next_due_date": far_future.isoformat(),
+                "priority": "medium",
             },
         )
 
@@ -505,6 +524,7 @@ class EditRecurringChoreNextDueDateTests(TestCase):
                 "name": "Take out trash",
                 "interval_days": "7",
                 "next_due_date": overdue_due.isoformat(),
+                "priority": "medium",
             },
         )
 
@@ -519,6 +539,7 @@ class EditRecurringChoreNextDueDateTests(TestCase):
                 "name": "Take out trash",
                 "interval_days": "7",
                 "next_due_date": manually_set_due.isoformat(),
+                "priority": "medium",
             },
         )
 

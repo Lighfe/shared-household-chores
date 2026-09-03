@@ -6,22 +6,28 @@ from chores.models import OneOffTask, RecurringChore
 class RecurringChoreForm(forms.ModelForm):
     """Create/edit form for RecurringChore.
 
-    Deliberately only exposes name, interval_days, next_due_date -- the
-    fields a user sets when creating a chore (#8). last_done_date is never
-    user-editable through this form; it stays unset on creation.
+    Deliberately only exposes name, interval_days, next_due_date, and
+    priority -- the fields a user sets when creating a chore (#8, plus
+    priority added by #22). last_done_date is never user-editable through
+    this form; it stays unset on creation.
 
     Validation is entirely the model field's own (blank=False on name,
     MinValueValidator(1) + model.clean() on interval_days, required
-    DateField on next_due_date) -- no hand-rolled validation logic, per
-    #8's constraints.
+    DateField on next_due_date, choices-restricted CharField on priority)
+    -- no hand-rolled validation logic, per #8's constraints. priority's
+    `choices` validation rejects anything outside Low/Medium/High, and the
+    model's default (Medium) is used as the field's initial value on an
+    unbound form, so submitting without touching the selector still saves
+    Medium (#22).
     """
 
     class Meta:
         model = RecurringChore
-        fields = ["name", "interval_days", "next_due_date"]
+        fields = ["name", "interval_days", "next_due_date", "priority"]
         labels = {
             "interval_days": "Interval (days)",
             "next_due_date": "Initial due date",
+            "priority": "Priority",
         }
         widgets = {
             "name": forms.TextInput(attrs={"maxlength": 255}),
@@ -31,9 +37,9 @@ class RecurringChoreForm(forms.ModelForm):
 
 
 class RecurringChoreEditForm(forms.ModelForm):
-    """Edit form for an existing RecurringChore's name/interval_days/next_due_date (#12, #16).
+    """Edit form for an existing RecurringChore's name/interval_days/next_due_date/priority (#12, #16, #22).
 
-    Exposes name, interval_days, and next_due_date -- excludes
+    Exposes name, interval_days, next_due_date, and priority -- excludes
     last_done_date. Per the "editing doesn't touch the current cycle"
     decision, editing name/interval_days alone edits the schedule going
     forward only: next_due_date is left untouched unless the user
@@ -47,10 +53,11 @@ class RecurringChoreEditForm(forms.ModelForm):
 
     class Meta:
         model = RecurringChore
-        fields = ["name", "interval_days", "next_due_date"]
+        fields = ["name", "interval_days", "next_due_date", "priority"]
         labels = {
             "interval_days": "Interval (days)",
             "next_due_date": "Next due date",
+            "priority": "Priority",
         }
         widgets = {
             "name": forms.TextInput(attrs={"maxlength": 255}),
@@ -62,19 +69,21 @@ class RecurringChoreEditForm(forms.ModelForm):
 class OneOffTaskForm(forms.ModelForm):
     """Create form for OneOffTask (#9).
 
-    Only exposes name and due_date -- the fields a user sets when creating
-    a one-off task. due_date is optional (null=True, blank=True on the
-    model), matching due_date=None being a valid, non-overdue state (#4).
-    Validation is entirely the model field's own (blank=False on name,
-    optional DateField on due_date) -- no hand-rolled validation logic,
+    Exposes name, due_date, and priority (#22) -- the fields a user sets
+    when creating a one-off task. due_date is optional (null=True,
+    blank=True on the model), matching due_date=None being a valid,
+    non-overdue state (#4). Validation is entirely the model field's own
+    (blank=False on name, optional DateField on due_date, choices-
+    restricted CharField on priority) -- no hand-rolled validation logic,
     per #9's constraints.
     """
 
     class Meta:
         model = OneOffTask
-        fields = ["name", "due_date"]
+        fields = ["name", "due_date", "priority"]
         labels = {
             "due_date": "Due date (optional)",
+            "priority": "Priority",
         }
         widgets = {
             "name": forms.TextInput(attrs={"maxlength": 255}),
