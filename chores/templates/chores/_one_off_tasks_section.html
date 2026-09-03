@@ -29,12 +29,23 @@
                     {% endif %}
                     <div class="task-priority">Priority: {{ task.priority }}</div>
                     <div class="task-actions">
+                        {# #27: `swap:220ms settle:220ms` (up from htmx's #}
+                        {# defaults of 0ms/20ms) gives the CSS opacity #}
+                        {# transitions on `.htmx-swapping`/`.htmx-settling` #}
+                        {# (see base.css) time to actually play -- the #}
+                        {# whole section (this row included) fades out #}
+                        {# before the response swaps it out, then the #}
+                        {# updated section fades back in, instead of the #}
+                        {# row vanishing instantly. The delete itself #}
+                        {# still happens server-side on the same request/ #}
+                        {# response as before; only when the already- #}
+                        {# computed result is *displayed* is delayed. #}
                         <form
                             class="done-task-form"
                             hx-post="{% url 'mark_one_off_task_done' task.id %}"
                             hx-confirm="Mark this task done? This cannot be undone."
                             hx-target="#one-off-tasks"
-                            hx-swap="outerHTML"
+                            hx-swap="outerHTML swap:220ms settle:220ms"
                         >
                             {% csrf_token %}
                             {# hx-disabled-elt: client-side double-submit guard #}

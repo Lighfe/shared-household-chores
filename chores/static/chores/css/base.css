@@ -361,3 +361,58 @@ button + button {
         grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
     }
 }
+
+/*
+ * #27: post-success completion feedback for "mark done", CSS-only (no new
+ * JS), hooked into HTMX's built-in swap-timing classes/attributes. The
+ * underlying data change (recurring chore's last_done_date/next_due_date;
+ * one-off task row deletion) already happened server-side by the time
+ * these responses render -- these rules only affect how the swap
+ * *looks*, not when the swap/data change happens.
+ *
+ * Recurring chore "Mark done" (`_recurring_chore_row.html`): the row
+ * that's swapped in carries `.htmx-settling` for the `settle:400ms`
+ * window declared on that form's `hx-swap` -- background flashes to a
+ * light "success" tint the instant the new row appears, then eases back
+ * to the card's normal white background over the transition below once
+ * `.htmx-settling` is removed. Runs on every mark-done, not just the
+ * first (it's tied to the swap lifecycle, not any one-time state).
+ */
+.chore {
+    transition: background-color 400ms ease;
+}
+
+.chore.htmx-settling {
+    background-color: #dff5e1;
+}
+
+/*
+ * One-off task "Done" (`_one_off_tasks_section.html`): that form's
+ * `hx-swap="outerHTML swap:220ms settle:220ms"` makes htmx tag the
+ * *current* #one-off-tasks content `.htmx-swapping` for 220ms before
+ * removing it (fade out -- the completed task's row disappears along
+ * with the rest of the list, rather than vanishing the instant the
+ * response arrives), then tags the freshly-swapped-in content
+ * `.htmx-settling` for another 220ms (fade in). Same swap-timing hook as
+ * above, just used for opacity instead of background-color, and shared
+ * by every "Done" press.
+ */
+#one-off-tasks {
+    transition: opacity 220ms ease;
+}
+
+#one-off-tasks.htmx-swapping,
+#one-off-tasks.htmx-settling {
+    opacity: 0;
+}
+
+/*
+ * Respect reduced-motion preferences: keep the feedback (the color/
+ * opacity change still happens) but drop the animated transition itself.
+ */
+@media (prefers-reduced-motion: reduce) {
+    .chore,
+    #one-off-tasks {
+        transition: none;
+    }
+}

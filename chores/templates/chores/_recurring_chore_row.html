@@ -19,7 +19,7 @@
         class="mark-done-form"
         hx-post="{% url 'mark_recurring_chore_done' chore.id %}"
         hx-target="#chore-row-{{ chore.id }}"
-        hx-swap="outerHTML"
+        hx-swap="outerHTML settle:400ms"
     >
         {% csrf_token %}
         {# hx-disabled-elt disables the button the instant it's clicked, #}
@@ -30,6 +30,13 @@
         {# the response is an error and the row isn't swapped. #}
         <button type="submit" hx-disabled-elt="this">Mark done</button>
     </form>
+    {# #27: `settle:400ms` (up from htmx's 20ms default) stretches out the #}
+    {# window during which htmx keeps the freshly-swapped-in row tagged #}
+    {# `.htmx-settling` (see base.css) -- long enough for the CSS #}
+    {# background-color flash there to actually read as a transition #}
+    {# instead of an instant snap. Purely a swap-timing tweak: the data #}
+    {# change (`last_done_date`/`next_due_date`) already happened before #}
+    {# this response was rendered, same as before this issue. #}
     {# GET fetches/displays the edit-form partial (#12); never modifies data. #}
     <button
         type="button"
