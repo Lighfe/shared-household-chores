@@ -232,6 +232,26 @@ button + button {
 }
 
 /*
+ * #25: hide the browser's default up/down spinner buttons on the
+ * "Interval (days)" number input (add form -- #23's merged
+ * AddItemForm -- and the recurring-chore edit form, #12/#16). The
+ * field stays type="number" with its native keyboard behavior and
+ * server-side validation (MinValueValidator(1) / model.clean())
+ * unchanged -- only the always-visible clickable spinner buttons are
+ * suppressed. Scoped to `.form-row input[type="number"]` so no other
+ * numeric input outside these forms is affected.
+ */
+.form-row input[type="number"] {
+    -moz-appearance: textfield;
+}
+
+.form-row input[type="number"]::-webkit-outer-spin-button,
+.form-row input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/*
  * #23: the merged Add form's "Recurring" checkbox row doesn't need the
  * full-width input treatment above -- it's a single small control next
  * to its label, not a full-width text/date/number input.
