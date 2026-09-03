@@ -70,6 +70,85 @@ would use the host's local timezone, not necessarily Europe/Berlin), a
 single shared helper provides "today" and is reused everywhere a
 completion date or status check needs it (#15, feeds into #4, #10, #17).
 
+## Grooming judgment calls from the manual-testing backlog (#19-#30), 2026-09-02
+
+A human testing session produced raw findings filed as issues #19-#30.
+Grooming them (per `_docs/team/pm.md`) surfaced several judgment calls
+beyond what each issue said, recorded here. Four follow-up issues were
+filed for scope explicitly moved out of the original 12: #31 (drag-and-
+drop reorder, out of #20), #32 (priority-based sort, out of #22), #33
+(guaranteed date format/calendar via a custom picker, out of #24/#26),
+#34 (custom confirm modal, out of #27).
+
+## #20's "reorder" request is split: an alphabetical sort toggle now, drag-and-drop deferred
+The raw finding's "sort chronologically" half was already satisfied by
+the existing automatic status-then-due-date sort (#5) by the time this
+was groomed. Rather than reject the issue outright, it was re-scoped to
+add a lightweight "Default"/"Name (A-Z)" sort toggle -- an actionable,
+small, checkable piece of the original ask. True manual drag-and-drop
+reordering with a persisted custom order was judged too large and
+product-ambiguous (how does a manual order interact with automatic
+status grouping?) to bundle into the same issue, and was split out to
+follow-up #31, not scheduled for the current backlog.
+
+## #22's priority field is display-only; sort/grouping impact is a separate follow-up
+Adding a `priority` field (Low/Medium/High, default Medium, on both
+`RecurringChore` and `OneOffTask`) was kept to "store it and show it."
+Whether/how priority should affect list ordering relative to the
+existing status/due-date sort is a real product question (does priority
+outrank due-date proximity? within a status group only or across
+groups?) that would have expanded #22 substantially -- split out to
+follow-up #32.
+
+## #24/#26 (calendar start day, date format) are scoped to a best-effort `lang`-attribute fix; a guaranteed fix is a separate follow-up
+Investigating `<input type="date">` behavior: the native calendar's
+first day of week and displayed date format are governed largely by the
+browser's own OS/browser locale handling, not reliably by the page's
+`lang` attribute -- this varies by browser and isn't something plain
+HTML/CSS can guarantee. Both issues were scoped to the best-effort fix
+(setting `<html lang>` to a Monday-first, day-before-month locale like
+`en-GB`), with an explicit note that this may not take effect on every
+browser. Guaranteeing both properties regardless of the visiting
+device's locale would require replacing the native date input with a
+custom-rendered date-picker (a new JS component) -- out of scope for
+these two issues, filed as a single shared follow-up, #33, since both
+stem from the same root cause.
+
+## #27's scope is the post-success animation only; replacing the native confirm() popup is a separate follow-up
+The tester's finding described the current `hx-confirm` native browser
+popup (used before one-off task "Done", per the "destructive actions
+require confirmation" decision) as feeling out of place, but that's a
+distinct, cross-cutting concern (also used by chore delete #13 and task
+cancel #18) from #27's actual ask (a post-success completion animation).
+Kept #27 scoped to the animation; replacing the native confirm dialogs
+app-wide with a custom-styled modal was split out to follow-up #34.
+
+## #19's scope was widened from "Recurring Chores" to both list sections
+The raw finding named only the Recurring Chores screen, but the
+One-off Tasks section shares the same layout/markup patterns
+(`.form-row`, `.chore-list`/`.task-list`) -- fixing only one would leave
+the two sections looking inconsistent side by side. #19 was groomed to
+cover both sections.
+
+## #21's form/list separation uses a native `<details>` disclosure, not a modal or new page
+The raw finding offered several options ("different sections, a modal,
+or a dedicated add view"). A native `<details>`/`<summary>` disclosure,
+collapsed by default, was chosen over a modal or a new page/route: it
+requires no new JS dependency, no new URL, and no accessibility
+scaffolding (native semantics), consistent with the app's existing
+"server-rendered templates + HTMX, no other JS framework" approach.
+
+## #28/#29/#30 are groomed as normal but flagged deferred, not labeled
+The tester explicitly flagged these three as future extension ideas,
+not for the current backlog. The repo's label set (`enhancement`, `bug`,
+`accessibility`, `documentation`, `duplicate`, `good first issue`,
+`help wanted`, `invalid`, `question`, `wontfix`) has no priority/
+deferred label, so each issue's body carries an explicit "Deferred /
+future work" note in the Goal and a closing Note instead of a label
+change. They were still groomed to the full template (checkable
+acceptance criteria, out of scope, constraints) so they're ready to pick
+up as-is if the product direction ever calls for them.
+
 ## LAN access is enforced by network boundary, not application code
 `ALLOWED_HOSTS` needs updating from its empty default so LAN requests
 aren't rejected, and the README must carry an explicit warning against
