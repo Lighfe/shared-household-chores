@@ -199,3 +199,66 @@ button + button {
     margin-top: 0.25rem;
     overflow-wrap: break-word;
 }
+
+/*
+ * #19: wider-than-phone layout, layered on top of the mobile-first rules
+ * above via min-width media queries. Nothing above this point changes,
+ * so phone-width viewports (<= 480px, well under the 768px breakpoint)
+ * render exactly as before -- same single-column stacking, same tap
+ * targets, same field order.
+ *
+ * Both the Recurring Chores and One-off Tasks sections share the same
+ * `.form-row`/`.chore-list`/`.task-list` hooks, so these rules apply to
+ * both sections identically (per _docs/decisions.md).
+ */
+@media (min-width: 768px) {
+    .page {
+        max-width: 48rem;
+        padding: 1.5rem;
+    }
+
+    /* Let the add-chore/add-task form rows sit side by side instead of
+       stacking full-width, so the form stops reading as one narrow
+       column with the button dangling below it. */
+    .add-chore-form,
+    .add-task-form {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        gap: 0 1rem;
+    }
+
+    .add-chore-form .form-row,
+    .add-task-form .form-row {
+        flex: 1 1 10rem;
+        min-width: 0;
+    }
+
+    .add-chore-form > button,
+    .add-task-form > button {
+        flex: 0 0 auto;
+    }
+
+    /* Chore/task cards: a responsive multi-column grid instead of the
+       single ~40rem-max centered column. `auto-fill` (not `auto-fit`)
+       is deliberate: with only one item, it keeps that card at its
+       natural card width instead of stretching it to fill the row. */
+    .chore-list,
+    .task-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+        align-items: start;
+        gap: 1rem;
+    }
+}
+
+@media (min-width: 1024px) {
+    .page {
+        max-width: 64rem;
+    }
+
+    .chore-list,
+    .task-list {
+        grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
+    }
+}
