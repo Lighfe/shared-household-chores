@@ -34,37 +34,47 @@
         {% endif %}
     </div>
 
-    <form
-        class="add-chore-form"
-        hx-post="{% url 'add_recurring_chore' %}"
-        hx-target="#recurring-chores"
-        hx-swap="outerHTML"
-    >
-        {% csrf_token %}
-        <input type="hidden" name="sort" value="{{ sort }}">
-        <div class="form-row">
-            <label for="{{ chore_form.name.id_for_label }}">{{ chore_form.name.label }}</label>
-            {{ chore_form.name }}
-            {% for error in chore_form.name.errors %}
-                <div class="form-error">{{ error }}</div>
-            {% endfor %}
-        </div>
-        <div class="form-row">
-            <label for="{{ chore_form.interval_days.id_for_label }}">{{ chore_form.interval_days.label }}</label>
-            {{ chore_form.interval_days }}
-            {% for error in chore_form.interval_days.errors %}
-                <div class="form-error">{{ error }}</div>
-            {% endfor %}
-        </div>
-        <div class="form-row">
-            <label for="{{ chore_form.next_due_date.id_for_label }}">{{ chore_form.next_due_date.label }}</label>
-            {{ chore_form.next_due_date }}
-            {% for error in chore_form.next_due_date.errors %}
-                <div class="form-error">{{ error }}</div>
-            {% endfor %}
-        </div>
-        <button type="submit">Add chore</button>
-    </form>
+    {# #21: the add-chore form is collapsed by default behind a native #}
+    {# <details>/<summary> disclosure -- no new JS, native keyboard/screen #}
+    {# reader semantics for free (see _docs/decisions.md). It stays open #}
+    {# after a failed submission (bound form with errors) so entered #}
+    {# values/errors remain visible; a successful submission resets #}
+    {# `chore_form` to a fresh, error-free instance (see `add_recurring_chore` #}
+    {# view), so the disclosure re-renders collapsed again. #}
+    <details class="add-item-disclosure"{% if chore_form.errors %} open{% endif %}>
+        <summary class="add-item-summary">+ Add chore</summary>
+        <form
+            class="add-chore-form"
+            hx-post="{% url 'add_recurring_chore' %}"
+            hx-target="#recurring-chores"
+            hx-swap="outerHTML"
+        >
+            {% csrf_token %}
+            <input type="hidden" name="sort" value="{{ sort }}">
+            <div class="form-row">
+                <label for="{{ chore_form.name.id_for_label }}">{{ chore_form.name.label }}</label>
+                {{ chore_form.name }}
+                {% for error in chore_form.name.errors %}
+                    <div class="form-error">{{ error }}</div>
+                {% endfor %}
+            </div>
+            <div class="form-row">
+                <label for="{{ chore_form.interval_days.id_for_label }}">{{ chore_form.interval_days.label }}</label>
+                {{ chore_form.interval_days }}
+                {% for error in chore_form.interval_days.errors %}
+                    <div class="form-error">{{ error }}</div>
+                {% endfor %}
+            </div>
+            <div class="form-row">
+                <label for="{{ chore_form.next_due_date.id_for_label }}">{{ chore_form.next_due_date.label }}</label>
+                {{ chore_form.next_due_date }}
+                {% for error in chore_form.next_due_date.errors %}
+                    <div class="form-error">{{ error }}</div>
+                {% endfor %}
+            </div>
+            <button type="submit">Add chore</button>
+        </form>
+    </details>
 
     {% if chores %}
         <ul class="chore-list">
