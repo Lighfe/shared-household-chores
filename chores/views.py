@@ -25,6 +25,14 @@ _STATUS_ORDER = {
 # rendered or compared for status classification.
 _FAR_FUTURE = date.max
 
+# Recognised Recurring Chores sort modes (#20). Anything else -- missing,
+# stale, or tampered-with query/POST value -- falls back to "default".
+_VALID_SORTS = {"default", "name"}
+
+
+def _normalize_sort(value):
+    return value if value in _VALID_SORTS else "default"
+
 
 def _chore_row(chore, today):
     """Build the row-context dict for a single RecurringChore.
@@ -41,7 +49,17 @@ def _chore_row(chore, today):
     }
 
 
-def _get_sorted_chores(today):
+def _get_sorted_chores(today, sort="default"):
+    """Build the Recurring Chores list, ordered per `sort` (#20).
+
+    `sort="default"` (or any unrecognised value) reproduces the original
+    (#5) ordering: status group, then next_due_date, then name, then id.
+
+    `sort="name"` is the alternate alphabetical view (#20): ignores
+    status/due-date grouping entirely and sorts every chore by
+    case-insensitive name, with id as the tie-break for identical names
+    -- same tie-break convention as the default sort.
+    """
     chores = []
     for chore in RecurringChore.objects.all():
         status = get_status(chore.next_due_date, today)
@@ -55,17 +73,20 @@ def _get_sorted_chores(today):
             }
         )
 
-    # Sort by status group, then next_due_date, then name/id for a
-    # deterministic tie-break when both status and due date match (names
-    # aren't unique, so id is the final tiebreak).
-    chores.sort(
-        key=lambda c: (
-            _STATUS_ORDER[c["status"]],
-            c["next_due_date"],
-            c["name"],
-            c["id"],
+    if sort == "name":
+        chores.sort(key=lambda c: (c["name"].lower(), c["id"]))
+    else:
+        # Sort by status group, then next_due_date, then name/id for a
+        # deterministic tie-break when both status and due date match
+        # (names aren't unique, so id is the final tiebreak).
+        chores.sort(
+            key=lambda c: (
+                _STATUS_ORDER[c["status"]],
+                c["next_due_date"],
+                c["name"],
+                c["id"],
+            )
         )
-    )
     return chores
 
 
@@ -98,8 +119,15 @@ def _get_sorted_tasks(today):
 
 
 def home(request):
+    """Render the full page.
+
+    Always starts the Recurring Chores list in "default" sort (#20): the
+    sort choice is never persisted (no model field, no session/cookie),
+    so a fresh page load/reload has nothing to read it back from.
+    """
     today = get_today()
-    chores = _get_sorted_chores(today)
+    sort = "default"
+    chores = _get_sorted_chores(today, sort)
     tasks = _get_sorted_tasks(today)
     chore_form = RecurringChoreForm()
     task_form = OneOffTaskForm()
@@ -109,6 +137,7 @@ def home(request):
         "chores/home.html",
         {
             "chores": chores,
+            "sort": sort,
             "tasks": tasks,
             "chore_form": chore_form,
             "task_form": task_form,
@@ -123,20 +152,27 @@ def add_recurring_chore(request):
     Always re-renders the recurring-chores partial (list + form), so an
     HTMX caller can swap it in place: a fresh, empty form on success, or
     the same form with bound values/errors on validation failure.
+
+    Preserves whichever sort mode (#20) the user had active: the add-chore
+    form carries a hidden `sort` field (set from the section's current
+    `sort` context value) so this re-render doesn't silently reset the
+    list back to "Default" out from under the user. Nothing is persisted
+    beyond this one request/response.
     """
     today = get_today()
+    sort = _normalize_sort(request.POST.get("sort", "default"))
     form = RecurringChoreForm(request.POST)
 
     if form.is_valid():
         form.save()
         form = RecurringChoreForm()
 
-    chores = _get_sorted_chores(today)
+    chores = _get_sorted_chores(today, sort)
 
     return render(
         request,
         "chores/_recurring_chores_section.html",
-        {"chores": chores, "chore_form": form},
+        {"chores": chores, "sort": sort, "chore_form": form},
     )
 
 
@@ -270,13 +306,40 @@ def delete_recurring_chore(request, chore_id):
     chore.delete()
 
     today = get_today()
-    chores = _get_sorted_chores(today)
+    sort = "default"
+    chores = _get_sorted_chores(today, sort)
     chore_form = RecurringChoreForm()
 
     return render(
         request,
         "chores/_recurring_chores_section.html",
-        {"chores": chores, "chore_form": chore_form},
+        {"chores": chores, "sort": sort, "chore_form": chore_form},
+    )
+
+
+@require_GET
+def sort_recurring_chores(request):
+    """Switch the Recurring Chores list's sort order (#20), HTMX-only.
+
+    GET-only and never modifies data: it just re-renders the
+    recurring-chores section partial with the chores ordered per
+    `?sort=` ("default" or "name"; anything else falls back to
+    "default"). The sort choice lives only in this one request/response
+    -- nothing is written to a model field, session, or cookie -- so a
+    full page reload (which hits `home`, not this endpoint) always resets
+    the list back to "Default", per #20's "not persisted" acceptance
+    criterion.
+    """
+    sort = _normalize_sort(request.GET.get("sort", "default"))
+
+    today = get_today()
+    chores = _get_sorted_chores(today, sort)
+    chore_form = RecurringChoreForm()
+
+    return render(
+        request,
+        "chores/_recurring_chores_section.html",
+        {"chores": chores, "sort": sort, "chore_form": chore_form},
     )
 
 

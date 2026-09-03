@@ -6,6 +6,34 @@
 <div id="recurring-chores">
     <h1>Recurring Chores</h1>
 
+    {# Sort-order control (#20): a lightweight alternate view, not a #}
+    {# persisted preference -- nothing here is written to a model field, #}
+    {# session, or cookie, so a full page reload always comes back to #}
+    {# "Default". The active option is rendered as plain text (not a #}
+    {# button) so it's visually distinguished from the switchable one. #}
+    <div class="sort-controls">
+        <span class="sort-controls-label">Sort:</span>
+        {% if sort == "name" %}
+            <button
+                type="button"
+                class="sort-option"
+                hx-get="{% url 'sort_recurring_chores' %}?sort=default"
+                hx-target="#recurring-chores"
+                hx-swap="outerHTML"
+            >Default</button>
+            <strong class="sort-option sort-option--active" aria-current="true">Name (A-Z)</strong>
+        {% else %}
+            <strong class="sort-option sort-option--active" aria-current="true">Default</strong>
+            <button
+                type="button"
+                class="sort-option"
+                hx-get="{% url 'sort_recurring_chores' %}?sort=name"
+                hx-target="#recurring-chores"
+                hx-swap="outerHTML"
+            >Name (A-Z)</button>
+        {% endif %}
+    </div>
+
     <form
         class="add-chore-form"
         hx-post="{% url 'add_recurring_chore' %}"
@@ -13,6 +41,7 @@
         hx-swap="outerHTML"
     >
         {% csrf_token %}
+        <input type="hidden" name="sort" value="{{ sort }}">
         <div class="form-row">
             <label for="{{ chore_form.name.id_for_label }}">{{ chore_form.name.label }}</label>
             {{ chore_form.name }}

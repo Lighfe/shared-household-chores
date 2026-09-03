@@ -28,6 +28,11 @@ urlpatterns = [
         name='add_recurring_chore',
     ),
     path(
+        'recurring-chores/sort/',
+        chores_views.sort_recurring_chores,
+        name='sort_recurring_chores',
+    ),
+    path(
         'one-off-tasks/add/',
         chores_views.add_one_off_task,
         name='add_one_off_task',
