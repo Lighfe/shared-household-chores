@@ -387,22 +387,23 @@ button + button {
 }
 
 /*
- * One-off task "Done" (`_one_off_tasks_section.html`): that form's
- * `hx-swap="outerHTML swap:220ms settle:220ms"` makes htmx tag the
- * *current* #one-off-tasks content `.htmx-swapping` for 220ms before
- * removing it (fade out -- the completed task's row disappears along
- * with the rest of the list, rather than vanishing the instant the
- * response arrives), then tags the freshly-swapped-in content
- * `.htmx-settling` for another 220ms (fade in). Same swap-timing hook as
- * above, just used for opacity instead of background-color, and shared
- * by every "Done" press.
+ * One-off task "Done" (`_one_off_task_row.html`): that form's
+ * `hx-swap="outerHTML swap:220ms"` targets/swaps just the completed
+ * task's own row (`#task-row-{{ task.id }}`), so htmx tags *that row*
+ * `.htmx-swapping` for 220ms before removing it (fade out -- the
+ * completed row disappears on its own, the rest of the list is
+ * untouched), rather than vanishing the instant the response arrives.
+ * #27 QA follow-up: this used to be scoped to the whole #one-off-tasks
+ * section, which made every visible row fade whenever any one task was
+ * marked done -- now it's per-row, same as the recurring-chore case.
+ * Same swap-timing hook as above, just used for opacity instead of
+ * background-color, and shared by every "Done" press.
  */
-#one-off-tasks {
+.task {
     transition: opacity 220ms ease;
 }
 
-#one-off-tasks.htmx-swapping,
-#one-off-tasks.htmx-settling {
+.task.htmx-swapping {
     opacity: 0;
 }
 
@@ -412,7 +413,7 @@ button + button {
  */
 @media (prefers-reduced-motion: reduce) {
     .chore,
-    #one-off-tasks {
+    .task {
         transition: none;
     }
 }

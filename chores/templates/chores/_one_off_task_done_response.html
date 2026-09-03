@@ -1,0 +1,17 @@
+{# Response for `mark_one_off_task_done` (#27 QA follow-up). #}
+{# #}
+{# The request's `hx-target`/`hx-swap` (on the "Done" form in #}
+{# `_one_off_task_row.html`) point at the completed task's own row -- #}
+{# `#task-row-{{ task.id }}`, `outerHTML swap:220ms` -- so this is #}
+{# normally empty: swapping "nothing" into that row removes just it, #}
+{# after the fade, leaving every other row untouched. #}
+{# #}
+{# The only other thing that can need updating is the "No one-off tasks #}
+{# yet." message, which is a stable out-of-band swap target #}
+{# (`#one-off-empty-state` in `_one_off_tasks_section.html`, always #}
+{# present but `hidden` while tasks exist) -- so when this was the last #}
+{# remaining task, reveal it via an out-of-band swap here instead of #}
+{# re-rendering the whole section. #}
+{% if not tasks %}
+<p id="one-off-empty-state" class="empty-state" hx-swap-oob="true">No one-off tasks yet.</p>
+{% endif %}

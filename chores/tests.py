@@ -385,7 +385,14 @@ class MarkOneOffTaskDoneTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertFalse(OneOffTask.objects.filter(pk=task.pk).exists())
 
-    def test_response_is_the_section_partial_without_the_deleted_task(self):
+    def test_response_targets_just_the_completed_tasks_row(self):
+        """#27 QA follow-up: the response must not re-render the whole
+        one-off-tasks section (that made every visible row fade, not just
+        the completed one -- see `_docs/decisions.md`/issue #27 comments).
+        Instead it's a tiny partial that, combined with the "Done" form's
+        `hx-target="#task-row-{{ task.id }}"`, scopes the swap (and its
+        CSS fade) to just the completed row.
+        """
         task = OneOffTask.objects.create(
             name="Return library book", due_date=self.today
         )
@@ -393,11 +400,47 @@ class MarkOneOffTaskDoneTests(TestCase):
 
         response = self.client.post(self._done_url(task.pk))
 
-        self.assertTemplateUsed(response, "chores/_one_off_tasks_section.html")
+        self.assertTemplateUsed(response, "chores/_one_off_task_done_response.html")
+        self.assertTemplateNotUsed(response, "chores/_one_off_tasks_section.html")
         self.assertTemplateNotUsed(response, "chores/home.html")
         content = response.content.decode()
         self.assertNotIn("Return library book", content)
-        self.assertIn("Renew passport", content)
+        self.assertNotIn("Renew passport", content)
+
+    def test_other_tasks_are_still_present_after_a_full_page_load(self):
+        task = OneOffTask.objects.create(
+            name="Return library book", due_date=self.today
+        )
+        OneOffTask.objects.create(name="Renew passport", due_date=None)
+
+        self.client.post(self._done_url(task.pk))
+        response = self.client.get("/")
+
+        self.assertNotContains(response, "Return library book")
+        self.assertContains(response, "Renew passport")
+
+    def test_response_does_not_reveal_empty_state_when_tasks_remain(self):
+        task = OneOffTask.objects.create(
+            name="Return library book", due_date=self.today
+        )
+        OneOffTask.objects.create(name="Renew passport", due_date=None)
+
+        response = self.client.post(self._done_url(task.pk))
+
+        self.assertNotContains(response, "No one-off tasks yet.")
+
+    def test_response_reveals_empty_state_out_of_band_when_it_was_the_last_task(
+        self,
+    ):
+        task = OneOffTask.objects.create(
+            name="Return library book", due_date=self.today
+        )
+
+        response = self.client.post(self._done_url(task.pk))
+
+        self.assertContains(response, "No one-off tasks yet.")
+        self.assertContains(response, 'id="one-off-empty-state"')
+        self.assertContains(response, "hx-swap-oob")
 
     def test_recurring_chore_section_is_unaffected(self):
         RecurringChore.objects.create(
@@ -614,6 +657,45 @@ class RecurringChoreFormPriorityTests(TestCase):
         response = Client().get("/")
 
         self.assertContains(response, "Priority: High")
+
+
+class OneOffTaskRowScopingTests(TestCase):
+    """#27 QA follow-up: each one-off task row carries its own id and the
+    "Done" form targets/swaps just that row, mirroring
+    `#chore-row-{{ chore.id }}` for recurring chores -- so the mark-done
+    completion fade plays on the completed row alone, not the whole
+    one-off-tasks section.
+    """
+
+    def setUp(self):
+        self.today = get_today()
+
+    def test_task_row_has_its_own_id(self):
+        task = OneOffTask.objects.create(
+            name="Return library book", due_date=self.today
+        )
+
+        response = Client().get("/")
+
+        self.assertContains(response, f'id="task-row-{task.pk}"')
+
+    def test_done_form_targets_the_tasks_own_row(self):
+        task = OneOffTask.objects.create(
+            name="Return library book", due_date=self.today
+        )
+
+        response = Client().get("/")
+
+        self.assertContains(response, f'hx-target="#task-row-{task.pk}"')
+
+    def test_empty_state_placeholder_is_hidden_while_tasks_exist(self):
+        OneOffTask.objects.create(name="Return library book", due_date=self.today)
+
+        response = Client().get("/")
+
+        content = response.content.decode()
+        self.assertIn('id="one-off-empty-state"', content)
+        self.assertIn("hidden", content)
 
 
 class OneOffTaskFormPriorityTests(TestCase):

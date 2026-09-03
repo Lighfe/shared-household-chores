@@ -358,9 +358,19 @@ def mark_one_off_task_done(request, task_id):
     get_object_or_404 + .delete()) makes this idempotent: an id that's
     already gone (double-submit, stale page) or that never existed simply
     deletes zero rows instead of raising, so the endpoint always succeeds.
-    Returns the re-rendered one-off-tasks section partial -- not a row --
-    since a deleted row can't swap itself; the client targets
-    #one-off-tasks with hx-swap="outerHTML".
+
+    #27 QA follow-up: this used to return the whole re-rendered
+    one-off-tasks section partial, which made every visible row (not
+    just the completed one) fade via `#one-off-tasks`-wide
+    `.htmx-swapping`/`.htmx-settling` CSS -- QA correctly failed that as
+    not matching the "on that task's row" acceptance criterion. The
+    client now targets/swaps just the completed task's own row
+    (`#task-row-{{ task.id }}`, see `_one_off_task_row.html`), so this
+    returns a tiny response partial instead: normally empty (removing
+    just that row leaves the rest of the list untouched), with an
+    out-of-band swap revealing the "No one-off tasks yet." message only
+    when this was the last remaining task -- see
+    `_one_off_task_done_response.html`.
     """
     today = get_today()
 
@@ -370,7 +380,7 @@ def mark_one_off_task_done(request, task_id):
 
     return render(
         request,
-        "chores/_one_off_tasks_section.html",
+        "chores/_one_off_task_done_response.html",
         {"tasks": tasks},
     )
 

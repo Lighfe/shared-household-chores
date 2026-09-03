@@ -1,0 +1,79 @@
+{# Single OneOffTask row (#27 QA follow-up). Extracted from #}
+{# `_one_off_tasks_section.html` so the "Done" mark-done form can #}
+{# target/swap just this row (`#task-row-{{ task.id }}`), the same way #}
+{# `_recurring_chore_row.html` lets the recurring-chore "Mark done" form #}
+{# scope its flash to `#chore-row-{{ chore.id }}` -- see #}
+{# `mark_one_off_task_done` in views.py and the `.task.htmx-swapping` #}
+{# rule in base.css. #}
+<li id="task-row-{{ task.id }}" class="task task--{{ task.status.value }}">
+    <div class="task-name">{{ task.name }}</div>
+    <div class="task-due-date">
+        Due:
+        {% if task.due_date %}
+            {{ task.due_date|date:"Y-m-d" }}
+        {% else %}
+            No due date
+        {% endif %}
+    </div>
+    {% if task.due_date %}
+        <div class="task-status">Status: {{ task.status.value }}</div>
+    {% endif %}
+    <div class="task-priority">Priority: {{ task.priority }}</div>
+    <div class="task-actions">
+        {# #27 QA follow-up: this form now targets/swaps just this row -- #}
+        {# `#task-row-{{ task.id }}` -- instead of the whole #}
+        {# `#one-off-tasks` section, so the completion fade plays on the #}
+        {# completed task's row only, not on every visible row. #}
+        {# `swap:220ms` (up from htmx's 0ms default) gives the #}
+        {# `.task.htmx-swapping` opacity transition in base.css time to #}
+        {# play before the row is actually removed. The response #}
+        {# (`_one_off_task_done_response.html`, rendered by #}
+        {# `mark_one_off_task_done`) is normally empty -- removing just #}
+        {# this row leaves every other row untouched -- and only carries #}
+        {# an out-of-band swap revealing "No one-off tasks yet." #}
+        {# (`#one-off-empty-state` in `_one_off_tasks_section.html`) when #}
+        {# this was the last remaining task. The delete itself still #}
+        {# happens server-side on the same request/response as before; #}
+        {# only the display of the already-computed result is delayed. #}
+        <form
+            class="done-task-form"
+            hx-post="{% url 'mark_one_off_task_done' task.id %}"
+            hx-confirm="Mark this task done? This cannot be undone."
+            hx-target="#task-row-{{ task.id }}"
+            hx-swap="outerHTML swap:220ms"
+        >
+            {% csrf_token %}
+            {# hx-disabled-elt: client-side double-submit guard (#17), #}
+            {# same as the recurring-chore mark-done control -- disables #}
+            {# the instant it's clicked, re-enables once the request #}
+            {# settles. Since this row is removed on success, the guard #}
+            {# only matters for the (rare) case where the response isn't #}
+            {# a swap, e.g. a network error. #}
+            <button type="submit" hx-disabled-elt="this">Done</button>
+        </form>
+        {# Cancel/remove (#18): a distinct action from "done" -- same #}
+        {# hard-delete result, but a user shouldn't have to dishonestly #}
+        {# mark a task "done" just to clear it. Visually de-emphasized #}
+        {# (muted, smaller, "x" label) via .task-remove-button so it #}
+        {# can't be confused with "Done", and has its own confirm #}
+        {# prompt/copy plus its own double-submit guard. Out of scope for #}
+        {# #27 (tracked separately) -- still targets/swaps the whole #}
+        {# section, unchanged. #}
+        <form
+            class="cancel-task-form"
+            hx-post="{% url 'cancel_one_off_task' task.id %}"
+            hx-confirm="Remove this task? This cannot be undone."
+            hx-target="#one-off-tasks"
+            hx-swap="outerHTML"
+        >
+            {% csrf_token %}
+            <button
+                type="submit"
+                class="task-remove-button"
+                hx-disabled-elt="this"
+                aria-label="Remove task"
+                title="Remove"
+            >&times;</button>
+        </form>
+    </div>
+</li>
