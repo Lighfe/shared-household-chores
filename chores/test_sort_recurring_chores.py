@@ -227,11 +227,6 @@ class SortDoesNotAffectStoredDataOrOtherSectionsTests(TestCase):
         self.assertEqual(OneOffTask.objects.count(), 1)
         self.assertTrue(OneOffTask.objects.filter(pk=self.task.id).exists())
 
-    def test_add_chore_form_still_present_after_switching_sort(self):
-        response = self.client.get(sort_url("name"))
-
-        self.assertContains(response, 'class="add-chore-form"')
-
     def test_reloading_home_after_sorting_by_name_resets_to_default(self):
         self.client.get(sort_url("name"))
 
@@ -242,11 +237,12 @@ class SortDoesNotAffectStoredDataOrOtherSectionsTests(TestCase):
 
     def test_adding_a_chore_preserves_the_active_name_sort(self):
         response = self.client.post(
-            reverse("add_recurring_chore"),
+            reverse("add_item"),
             {
                 "name": "Vacuum",
+                "recurring": "on",
                 "interval_days": 7,
-                "next_due_date": self.today.isoformat(),
+                "due_date": self.today.isoformat(),
                 "sort": "name",
                 "priority": "medium",
             },

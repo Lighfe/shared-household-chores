@@ -555,7 +555,14 @@ class CancelOneOffTaskTests(TestCase):
 
 
 class RecurringChoreFormPriorityTests(TestCase):
-    """Priority field on the add-chore and edit-chore forms (#22)."""
+    """Priority field on the add-chore and edit-chore forms (#22).
+
+    Creation moved to the merged AddItemForm/add_item endpoint (#23) --
+    see chores/test_add_item.py for its own priority coverage. The
+    RecurringChoreForm-level and edit-form assertions here still exercise
+    the underlying model form classes directly, which are unaffected by
+    the merge.
+    """
 
     def test_add_form_pre_selects_medium_when_unbound(self):
         form = RecurringChoreForm()
@@ -573,55 +580,6 @@ class RecurringChoreFormPriorityTests(TestCase):
         form = RecurringChoreEditForm(instance=chore)
 
         self.assertEqual(form["priority"].value(), Priority.HIGH)
-
-    def test_submitting_without_touching_priority_saves_the_default(self):
-        response = Client().post(
-            reverse("add_recurring_chore"),
-            {
-                "name": "Take out trash",
-                "interval_days": "7",
-                "next_due_date": "2026-09-08",
-                "priority": Priority.MEDIUM,
-            },
-        )
-
-        self.assertEqual(response.status_code, 200)
-        chore = RecurringChore.objects.get(name="Take out trash")
-        self.assertEqual(chore.priority, Priority.MEDIUM)
-
-    def test_submitting_a_non_default_priority_saves_it(self):
-        response = Client().post(
-            reverse("add_recurring_chore"),
-            {
-                "name": "Take out trash",
-                "interval_days": "7",
-                "next_due_date": "2026-09-08",
-                "priority": Priority.LOW,
-            },
-        )
-
-        self.assertEqual(response.status_code, 200)
-        chore = RecurringChore.objects.get(name="Take out trash")
-        self.assertEqual(chore.priority, Priority.LOW)
-
-    def test_tampered_priority_value_is_rejected_with_validation_error(self):
-        response = Client().post(
-            reverse("add_recurring_chore"),
-            {
-                "name": "Take out trash",
-                "interval_days": "7",
-                "next_due_date": "2026-09-08",
-                "priority": "urgent",
-            },
-        )
-
-        self.assertEqual(response.status_code, 200)
-        self.assertFalse(RecurringChore.objects.filter(name="Take out trash").exists())
-        self.assertContains(
-            response, "Select a valid choice. urgent is not one of the available choices."
-        )
-        # Other entered values are preserved on the re-rendered form.
-        self.assertContains(response, 'value="Take out trash"')
 
     def test_editing_a_chore_updates_its_priority(self):
         chore = RecurringChore.objects.create(
@@ -659,60 +617,18 @@ class RecurringChoreFormPriorityTests(TestCase):
 
 
 class OneOffTaskFormPriorityTests(TestCase):
-    """Priority field on the add-task form (#22)."""
+    """Priority field on the add-task form (#22).
+
+    Creation moved to the merged AddItemForm/add_item endpoint (#23) --
+    see chores/test_add_item.py for its own priority coverage. The
+    OneOffTaskForm-level assertion here still exercises the underlying
+    model form class directly, which is unaffected by the merge.
+    """
 
     def test_add_form_pre_selects_medium_when_unbound(self):
         form = OneOffTaskForm()
 
         self.assertEqual(form["priority"].value(), Priority.MEDIUM)
-
-    def test_submitting_without_touching_priority_saves_the_default(self):
-        response = Client().post(
-            reverse("add_one_off_task"),
-            {
-                "name": "Return library books",
-                "due_date": "",
-                "priority": Priority.MEDIUM,
-            },
-        )
-
-        self.assertEqual(response.status_code, 200)
-        task = OneOffTask.objects.get(name="Return library books")
-        self.assertEqual(task.priority, Priority.MEDIUM)
-
-    def test_submitting_a_non_default_priority_saves_it(self):
-        response = Client().post(
-            reverse("add_one_off_task"),
-            {
-                "name": "Return library books",
-                "due_date": "",
-                "priority": Priority.LOW,
-            },
-        )
-
-        self.assertEqual(response.status_code, 200)
-        task = OneOffTask.objects.get(name="Return library books")
-        self.assertEqual(task.priority, Priority.LOW)
-
-    def test_tampered_priority_value_is_rejected_with_validation_error(self):
-        response = Client().post(
-            reverse("add_one_off_task"),
-            {
-                "name": "Return library books",
-                "due_date": "",
-                "priority": "urgent",
-            },
-        )
-
-        self.assertEqual(response.status_code, 200)
-        self.assertFalse(
-            OneOffTask.objects.filter(name="Return library books").exists()
-        )
-        self.assertContains(
-            response, "Select a valid choice. urgent is not one of the available choices."
-        )
-        # Other entered values are preserved on the re-rendered form.
-        self.assertContains(response, 'value="Return library books"')
 
     def test_rendered_task_row_displays_its_priority(self):
         OneOffTask.objects.create(name="Return library books", priority=Priority.LOW)

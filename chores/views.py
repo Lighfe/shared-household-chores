@@ -4,7 +4,7 @@ from django.shortcuts import get_object_or_404, render
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
 from chores.dates import get_today
-from chores.forms import OneOffTaskForm, RecurringChoreEditForm, RecurringChoreForm
+from chores.forms import AddItemForm, RecurringChoreEditForm
 from chores.models import OneOffTask, RecurringChore
 from chores.status import Status, get_status
 
@@ -127,13 +127,15 @@ def home(request):
     Always starts the Recurring Chores list in "default" sort (#20): the
     sort choice is never persisted (no model field, no session/cookie),
     so a fresh page load/reload has nothing to read it back from.
+
+    Renders a single merged `item_form` (#23) rather than separate
+    chore/task forms -- see `add_item` and `chores/_add_item_form.html`.
     """
     today = get_today()
     sort = "default"
     chores = _get_sorted_chores(today, sort)
     tasks = _get_sorted_tasks(today)
-    chore_form = RecurringChoreForm()
-    task_form = OneOffTaskForm()
+    item_form = AddItemForm()
 
     return render(
         request,
@@ -142,64 +144,67 @@ def home(request):
             "chores": chores,
             "sort": sort,
             "tasks": tasks,
-            "chore_form": chore_form,
-            "task_form": task_form,
+            "item_form": item_form,
         },
     )
 
 
 @require_POST
-def add_recurring_chore(request):
-    """Create a RecurringChore from the home page's add-chore form (#8).
+def add_item(request):
+    """Create a RecurringChore or OneOffTask from the home page's single merged Add form (#23).
 
-    Always re-renders the recurring-chores partial (list + form), so an
-    HTMX caller can swap it in place: a fresh, empty form on success, or
-    the same form with bound values/errors on validation failure.
+    Replaces the separate add-chore/add-task forms (and their disclosures,
+    #21) with one "Add" form: the submitted "Recurring" checkbox picks
+    which model gets created -- see `AddItemForm.clean()` for the
+    server-side requiredness enforcement that mirrors
+    RecurringChoreForm/OneOffTaskForm, regardless of client-side
+    checkbox/CSS toggle state.
 
-    Preserves whichever sort mode (#20) the user had active: the add-chore
-    form carries a hidden `sort` field (set from the section's current
-    `sort` context value) so this re-render doesn't silently reset the
-    list back to "Default" out from under the user. Nothing is persisted
-    beyond this one request/response.
+    Always re-renders the whole home-content partial (merged form + both
+    lists), so an HTMX caller can swap it in place: a fresh, empty form on
+    success with the newly created item already in its list, or the same
+    form with bound values/errors -- including the submitted
+    checked/unchecked Recurring state -- on validation failure. Only
+    creation is merged: the two lists, their sort order, and their
+    per-item controls are otherwise untouched (#23's "out of scope").
+
+    Preserves whichever sort mode (#20) the Recurring Chores list had
+    active, the same way the old add-chore form's hidden `sort` field did.
     """
     today = get_today()
     sort = _normalize_sort(request.POST.get("sort", "default"))
-    form = RecurringChoreForm(request.POST)
+    form = AddItemForm(request.POST)
 
     if form.is_valid():
-        form.save()
-        form = RecurringChoreForm()
+        name = form.cleaned_data["name"]
+        priority = form.cleaned_data["priority"]
+        if form.cleaned_data["recurring"]:
+            RecurringChore.objects.create(
+                name=name,
+                interval_days=form.cleaned_data["interval_days"],
+                next_due_date=form.cleaned_data["due_date"],
+                priority=priority,
+            )
+        else:
+            OneOffTask.objects.create(
+                name=name,
+                due_date=form.cleaned_data["due_date"],
+                priority=priority,
+            )
+        form = AddItemForm()
 
     chores = _get_sorted_chores(today, sort)
-
-    return render(
-        request,
-        "chores/_recurring_chores_section.html",
-        {"chores": chores, "sort": sort, "chore_form": form},
-    )
-
-
-@require_POST
-def add_one_off_task(request):
-    """Create a OneOffTask from the home page's add-task form (#9).
-
-    Always re-renders the one-off-tasks partial (list + form), so an HTMX
-    caller can swap it in place: a fresh, empty form on success, or the
-    same form with bound values/errors on validation failure.
-    """
-    today = get_today()
-    form = OneOffTaskForm(request.POST)
-
-    if form.is_valid():
-        form.save()
-        form = OneOffTaskForm()
-
     tasks = _get_sorted_tasks(today)
 
     return render(
         request,
-        "chores/_one_off_tasks_section.html",
-        {"tasks": tasks, "task_form": form},
+        "chores/_home_content.html",
+        {
+            "chores": chores,
+            "sort": sort,
+            "tasks": tasks,
+            "item_form": form,
+        },
     )
 
 
@@ -311,12 +316,11 @@ def delete_recurring_chore(request, chore_id):
     today = get_today()
     sort = "default"
     chores = _get_sorted_chores(today, sort)
-    chore_form = RecurringChoreForm()
 
     return render(
         request,
         "chores/_recurring_chores_section.html",
-        {"chores": chores, "sort": sort, "chore_form": chore_form},
+        {"chores": chores, "sort": sort},
     )
 
 
@@ -337,12 +341,11 @@ def sort_recurring_chores(request):
 
     today = get_today()
     chores = _get_sorted_chores(today, sort)
-    chore_form = RecurringChoreForm()
 
     return render(
         request,
         "chores/_recurring_chores_section.html",
-        {"chores": chores, "sort": sort, "chore_form": chore_form},
+        {"chores": chores, "sort": sort},
     )
 
 
@@ -364,12 +367,11 @@ def mark_one_off_task_done(request, task_id):
     OneOffTask.objects.filter(pk=task_id).delete()
 
     tasks = _get_sorted_tasks(today)
-    task_form = OneOffTaskForm()
 
     return render(
         request,
         "chores/_one_off_tasks_section.html",
-        {"tasks": tasks, "task_form": task_form},
+        {"tasks": tasks},
     )
 
 
@@ -396,10 +398,9 @@ def cancel_one_off_task(request, task_id):
     OneOffTask.objects.filter(pk=task_id).delete()
 
     tasks = _get_sorted_tasks(today)
-    task_form = OneOffTaskForm()
 
     return render(
         request,
         "chores/_one_off_tasks_section.html",
-        {"tasks": tasks, "task_form": task_form},
+        {"tasks": tasks},
     )

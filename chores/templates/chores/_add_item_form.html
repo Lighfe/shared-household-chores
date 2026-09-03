@@ -1,0 +1,73 @@
+{# Merged Add form (#23): a single "Add" form with a "Recurring" checkbox #}
+{# replaces the old separate add-chore/add-task forms/disclosures (#21). #}
+{# Lives once in chores/_home_content.html -- not nested inside either #}
+{# list section -- since a single submission can create either a #}
+{# RecurringChore or a OneOffTask, so it can't "belong" to one list. #}
+{#      #}
+{# Collapsed by default via the same native <details>/<summary> #}
+{# disclosure as before (#21): no new JS needed for that part. It stays #}
+{# open after a failed submission (bound form with errors) so entered #}
+{# values/errors -- and the submitted checked/unchecked Recurring state -- #}
+{# remain visible; a successful submission resets `item_form` to a fresh, #}
+{# error-free instance (see the `add_item` view), so the disclosure #}
+{# re-renders collapsed again. #}
+{#      #}
+{# Interval (days) is only relevant when "Recurring" is checked, and the #}
+{# due-date field's "(optional)" hint only applies when it's unchecked. #}
+{# Both are toggled purely with CSS (:has(), see base.css) that reacts to #}
+{# the checkbox's live checked state -- no JS, and the fields stay in the #}
+{# DOM (just hidden) so unchecking/re-checking never discards typed #}
+{# values. #}
+<details class="add-item-disclosure"{% if item_form.errors %} open{% endif %}>
+    <summary class="add-item-summary">+ Add</summary>
+    <form
+        class="add-item-form"
+        hx-post="{% url 'add_item' %}"
+        hx-target="#home-content"
+        hx-swap="outerHTML"
+    >
+        {% csrf_token %}
+        <input type="hidden" name="sort" value="{{ sort }}">
+        <div class="form-row">
+            <label for="{{ item_form.name.id_for_label }}">{{ item_form.name.label }}</label>
+            {{ item_form.name }}
+            {% for error in item_form.name.errors %}
+                <div class="form-error">{{ error }}</div>
+            {% endfor %}
+        </div>
+        <div class="form-row form-row--checkbox">
+            <label for="{{ item_form.recurring.id_for_label }}">
+                {{ item_form.recurring }}
+                {{ item_form.recurring.label }}
+            </label>
+            {% for error in item_form.recurring.errors %}
+                <div class="form-error">{{ error }}</div>
+            {% endfor %}
+        </div>
+        <div class="form-row recurring-only">
+            <label for="{{ item_form.interval_days.id_for_label }}">{{ item_form.interval_days.label }}</label>
+            {{ item_form.interval_days }}
+            {% for error in item_form.interval_days.errors %}
+                <div class="form-error">{{ error }}</div>
+            {% endfor %}
+        </div>
+        <div class="form-row">
+            <label for="{{ item_form.due_date.id_for_label }}">
+                {{ item_form.due_date.label }}
+                <span class="due-date-optional-hint">(optional)</span>
+            </label>
+            {{ item_form.due_date }}
+            {% for error in item_form.due_date.errors %}
+                <div class="form-error">{{ error }}</div>
+            {% endfor %}
+        </div>
+        <div class="form-row">
+            <label for="{{ item_form.priority.id_for_label }}">{{ item_form.priority.label }}</label>
+            {{ item_form.priority }}
+            {% for error in item_form.priority.errors %}
+                <div class="form-error">{{ error }}</div>
+            {% endfor %}
+        </div>
+        <button type="submit">Add</button>
+    </form>
+</details>

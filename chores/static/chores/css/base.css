@@ -168,10 +168,10 @@ button + button {
 }
 
 /*
- * #21: the add-chore/add-task forms live behind a native <details>/
- * <summary> disclosure, collapsed by default, so they read as a
- * separate action from the list rather than one continuous block. The
- * summary is styled to look like a clearly labelled control (not plain
+ * #21 (merged into one form by #23): the add-item form lives behind a
+ * native <details>/<summary> disclosure, collapsed by default, so it
+ * reads as a separate action from the lists rather than one continuous
+ * block. The summary is styled to look like a clearly labelled control (not plain
  * text), and the open panel gets its own border/background/spacing so
  * it stays visually distinguishable from the list below it even while
  * expanded -- not relying on the collapse/expand state alone.
@@ -201,16 +201,15 @@ button + button {
     border-bottom: 1px solid #ccc;
 }
 
-.add-item-disclosure .add-chore-form,
-.add-item-disclosure .add-task-form {
+.add-item-disclosure .add-item-form {
     padding: 0.75rem;
 }
 
 /*
- * Minimal form styling so the add-chore form (#8) doesn't break on a
- * phone: full-width, non-overflowing inputs and legible, visible error
- * text. Not full visual polish (that's #7's territory) -- just "doesn't
- * overflow and errors are readable".
+ * Minimal form styling so the add-item form (#8, #9, merged by #23)
+ * doesn't break on a phone: full-width, non-overflowing inputs and
+ * legible, visible error text. Not full visual polish (that's #7's
+ * territory) -- just "doesn't overflow and errors are readable".
  */
 .form-row {
     display: flex;
@@ -230,6 +229,50 @@ button + button {
     font-size: 1rem;
     padding: 0.5rem;
     min-height: 44px;
+}
+
+/*
+ * #23: the merged Add form's "Recurring" checkbox row doesn't need the
+ * full-width input treatment above -- it's a single small control next
+ * to its label, not a full-width text/date/number input.
+ */
+.form-row--checkbox label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 400;
+}
+
+.form-row--checkbox input {
+    width: auto;
+    min-height: 0;
+}
+
+/*
+ * #23: show/hide fields on the merged Add form purely with CSS, reacting
+ * live to the "Recurring" checkbox's checked state -- no JS needed (per
+ * the issue's constraint to prefer plain HTML/CSS). `.recurring-only`
+ * rows (currently just Interval (days)) are hidden unless the checkbox
+ * (#id_recurring) is checked; the due-date field's "(optional)" hint is
+ * hidden once it becomes required. Fields are only ever hidden with
+ * `display: none`, never removed from the DOM, so typed values survive
+ * toggling the checkbox back and forth.
+ */
+.add-item-form .recurring-only {
+    display: none;
+}
+
+.add-item-form:has(#id_recurring:checked) .recurring-only {
+    display: flex;
+}
+
+.add-item-form:has(#id_recurring:checked) .due-date-optional-hint {
+    display: none;
+}
+
+.due-date-optional-hint {
+    font-weight: 400;
+    color: #666;
 }
 
 .form-error {
@@ -256,25 +299,22 @@ button + button {
         padding: 1.5rem;
     }
 
-    /* Let the add-chore/add-task form rows sit side by side instead of
-       stacking full-width, so the form stops reading as one narrow
-       column with the button dangling below it. */
-    .add-chore-form,
-    .add-task-form {
+    /* Let the add-item form's rows sit side by side instead of stacking
+       full-width, so the form stops reading as one narrow column with
+       the button dangling below it. */
+    .add-item-form {
         display: flex;
         flex-wrap: wrap;
         align-items: flex-end;
         gap: 0 1rem;
     }
 
-    .add-chore-form .form-row,
-    .add-task-form .form-row {
+    .add-item-form .form-row {
         flex: 1 1 10rem;
         min-width: 0;
     }
 
-    .add-chore-form > button,
-    .add-task-form > button {
+    .add-item-form > button {
         flex: 0 0 auto;
     }
 

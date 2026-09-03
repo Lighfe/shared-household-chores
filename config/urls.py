@@ -23,19 +23,14 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', chores_views.home, name='home'),
     path(
-        'recurring-chores/add/',
-        chores_views.add_recurring_chore,
-        name='add_recurring_chore',
+        'items/add/',
+        chores_views.add_item,
+        name='add_item',
     ),
     path(
         'recurring-chores/sort/',
         chores_views.sort_recurring_chores,
         name='sort_recurring_chores',
-    ),
-    path(
-        'one-off-tasks/add/',
-        chores_views.add_one_off_task,
-        name='add_one_off_task',
     ),
     path(
         'recurring-chores/<int:chore_id>/mark-done/',

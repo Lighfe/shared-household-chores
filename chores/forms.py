@@ -1,6 +1,6 @@
 from django import forms
 
-from chores.models import OneOffTask, RecurringChore
+from chores.models import OneOffTask, Priority, RecurringChore
 
 
 class RecurringChoreForm(forms.ModelForm):
@@ -89,3 +89,62 @@ class OneOffTaskForm(forms.ModelForm):
             "name": forms.TextInput(attrs={"maxlength": 255}),
             "due_date": forms.DateInput(attrs={"type": "date"}),
         }
+
+
+class AddItemForm(forms.Form):
+    """Merged create form for either a RecurringChore or a OneOffTask (#23).
+
+    Replaces the separate RecurringChoreForm/OneOffTaskForm disclosures on
+    the home page with a single "Add" form: a "Recurring" checkbox picks
+    which model gets created on submit. Field names/labels intentionally
+    match the two underlying forms as closely as possible (`due_date`
+    plays the role of `next_due_date` when recurring is checked) so the
+    view's mapping from cleaned_data to model kwargs is direct.
+
+    Requiredness mirrors the two original forms exactly, but is enforced
+    here in clean() rather than via each field's own `required` flag,
+    since which fields are required depends on the "recurring" checkbox's
+    value -- not on the field in isolation. This runs on every submission
+    server-side, so a bypassed/broken client (no JS, tampered POST) can't
+    skip required fields by leaving "recurring" checked but omitting
+    interval_days/due_date (#23's constraint: don't rely on client-side
+    `required` attributes alone).
+
+    - recurring unchecked: due_date optional, interval_days ignored
+      entirely (not stored) -- matching OneOffTaskForm.
+    - recurring checked: interval_days (>= 1) and due_date both required
+      -- matching RecurringChoreForm.
+    """
+
+    name = forms.CharField(
+        max_length=255, widget=forms.TextInput(attrs={"maxlength": 255})
+    )
+    recurring = forms.BooleanField(required=False, label="Recurring")
+    interval_days = forms.IntegerField(
+        required=False,
+        min_value=1,
+        label="Interval (days)",
+        widget=forms.NumberInput(attrs={"min": 1, "step": 1}),
+    )
+    due_date = forms.DateField(
+        required=False,
+        label="Due date",
+        widget=forms.DateInput(attrs={"type": "date"}),
+    )
+    priority = forms.ChoiceField(
+        choices=Priority.choices, initial=Priority.MEDIUM, label="Priority"
+    )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        recurring = cleaned_data.get("recurring")
+        interval_days = cleaned_data.get("interval_days")
+        due_date = cleaned_data.get("due_date")
+
+        if recurring:
+            if interval_days is None:
+                self.add_error("interval_days", "This field is required.")
+            if due_date is None:
+                self.add_error("due_date", "This field is required.")
+
+        return cleaned_data

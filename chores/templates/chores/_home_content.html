@@ -1,0 +1,18 @@
+{# Home page content (#23): the single merged Add form, followed by both #}
+{# list sections. This whole block is the HTMX swap target/response for #}
+{# the merged add-item endpoint -- `hx-target="#home-content"` / #}
+{# `hx-swap="outerHTML"` on chores/_add_item_form.html -- since one #}
+{# submission can update either list (or neither, on validation failure). #}
+{#      #}
+{# Each list section keeps its own id (#recurring-chores/#one-off-tasks) #}
+{# and is still the independent swap target for its own per-item actions #}
+{# (mark done, edit, delete, cancel, sort) -- only *creation* is merged, #}
+{# per #23's "out of scope"; those other endpoints are untouched and keep #}
+{# swapping just their own section. #}
+<div id="home-content">
+    {% include "chores/_add_item_form.html" %}
+
+    {% include "chores/_recurring_chores_section.html" %}
+
+    {% include "chores/_one_off_tasks_section.html" %}
+</div>

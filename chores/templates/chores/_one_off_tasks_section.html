@@ -6,42 +6,10 @@
 <div id="one-off-tasks">
     <h1>One-off Tasks</h1>
 
-    {# #21: same collapsed-by-default <details>/<summary> disclosure as #}
-    {# the add-chore form, for consistency between the two sections -- see #}
-    {# _recurring_chores_section.html and _docs/decisions.md. #}
-    <details class="add-item-disclosure"{% if task_form.errors %} open{% endif %}>
-        <summary class="add-item-summary">+ Add task</summary>
-        <form
-            class="add-task-form"
-            hx-post="{% url 'add_one_off_task' %}"
-            hx-target="#one-off-tasks"
-            hx-swap="outerHTML"
-        >
-            {% csrf_token %}
-            <div class="form-row">
-                <label for="{{ task_form.name.id_for_label }}">{{ task_form.name.label }}</label>
-                {{ task_form.name }}
-                {% for error in task_form.name.errors %}
-                    <div class="form-error">{{ error }}</div>
-                {% endfor %}
-            </div>
-            <div class="form-row">
-                <label for="{{ task_form.due_date.id_for_label }}">{{ task_form.due_date.label }}</label>
-                {{ task_form.due_date }}
-                {% for error in task_form.due_date.errors %}
-                    <div class="form-error">{{ error }}</div>
-                {% endfor %}
-            </div>
-            <div class="form-row">
-                <label for="{{ task_form.priority.id_for_label }}">{{ task_form.priority.label }}</label>
-                {{ task_form.priority }}
-                {% for error in task_form.priority.errors %}
-                    <div class="form-error">{{ error }}</div>
-                {% endfor %}
-            </div>
-            <button type="submit">Add task</button>
-        </form>
-    </details>
+    {# #23: the add-task form used to live here behind its own disclosure #}
+    {# (#21). It's now merged with the add-chore form into one "Add" form -- #}
+    {# see chores/_add_item_form.html, included once from #}
+    {# chores/_home_content.html rather than nested in this section. #}
 
     {% if tasks %}
         <ul class="task-list">
