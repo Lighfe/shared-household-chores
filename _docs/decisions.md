@@ -182,3 +182,58 @@ no code-level enforcement (e.g. IP-restricting middleware) — the app
 relies on the household's network boundary plus the documented warning,
 consistent with `_docs/plan.md`'s "no auth, trusted household devices
 only" (#14).
+
+## #36 is actionable via a custom `runserver` command, not wontfix
+The reported "no clickable link" turned out to not be about a missing
+`http://` line — Django's dev server always prints one, and terminals
+generally auto-linkify it. The real problem is what it points at:
+per the README, we run with `0.0.0.0:8000` (to be LAN-reachable), and
+Django's `on_bind` (`django/core/management/commands/runserver.py`)
+prints the bind address verbatim, i.e. the unusable
+`http://0.0.0.0:8000/`. `on_bind` is a normal method on a subclassable
+`Command` class, and Django's own docs on overriding management
+commands document exactly this pattern (also used by
+`django-extensions`' `runserver_plus`), so this isn't framework
+territory outside the app's control — it's a small, self-contained
+custom command (`chores/management/commands/runserver.py`) overriding
+one method to print `127.0.0.1` instead of `0.0.0.0`. Auto-detecting
+and printing the machine's actual LAN IP (so other devices get a
+ready-made link too) was split out to #38 — it needs
+network-interface-selection logic that's out of proportion to what #36
+asks for.
+
+## #35 reverses part of #20: sort choice now persists, via Django sessions
+#20 explicitly shipped the "Default"/"Name (A-Z)" sort toggle *without*
+persistence ("no new model field, no cookie/session ... consistent
+with this app having no per-user state") as a deliberate scope
+reduction for that issue. #35 asks for exactly that persistence back
+(the sort resetting every session was reported as unwanted, not as a
+misunderstanding of #20's original behavior), so grooming it treats
+this as a legitimate scope change, not a contradiction to reject.
+Persisting a UI preference like "which sort is selected" isn't the
+same as the "no per-user state"/"no history/stats" scope decisions in
+`_docs/outdated/plan.md` — those rule out multi-user accounts and
+completion logs/analytics, not remembering one UI toggle for the
+single user of a single-user app.
+
+The mechanism was a judgment call: Django's session framework
+(`django.contrib.sessions`) is already installed and its
+`SessionMiddleware` already active in `config/settings.py` (default,
+unused by app code until now) with no custom `SESSION_*` settings, so
+its defaults apply — server-side, database-backed sessions, with a
+cookie that survives the browser being closed (`SESSION_COOKIE_AGE`'s
+default 2 weeks; `SESSION_EXPIRE_AT_BROWSER_CLOSE` is not set to
+`True`). This was chosen over introducing `localStorage`/client-side
+JS (the app is server-rendered + HTMX, and a session read on the
+existing `/` and sort-switch requests avoids adding a JS round-trip
+and a new client-side mechanism) and over a new persisted model field
+(a sort preference isn't chore/task data, and a `RecurringChore`- or
+global-settings-level field would be the wrong home for view state).
+
+While grooming #35, a related but distinct bug was found:
+`delete_recurring_chore` (`chores/views.py`) hardcodes `sort =
+"default"` when re-rendering the section after a delete, so deleting a
+chore resets the visible list to "Default" even mid-session, regardless
+of the active sort — independent of #35's cross-session persistence.
+Kept out of #35 (it's a same-session rendering bug, not a persistence
+gap) and filed as follow-up #37.
