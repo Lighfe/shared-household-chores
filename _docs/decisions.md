@@ -149,6 +149,31 @@ change. They were still groomed to the full template (checkable
 acceptance criteria, out of scope, constraints) so they're ready to pick
 up as-is if the product direction ever calls for them.
 
+## QA gets a third verdict, NEEDS-HUMAN, for criteria only checkable in a real browser
+#24/#26 were closed on "QA: PASS (with caveat)" for a criterion QA
+structurally could not check (no GUI browser in the sandbox) — the
+rendered calendar's actual first-day-of-week/date-format. Manual
+testing on 2026-09-03 confirmed the calendar still shows Sunday-first
+in the browser actually used, meaning the caveat's predicted failure
+mode happened and the issue was closed prematurely. Root cause: QA
+only had PASS/FAIL, and FAIL would have sent it back to an engineer who
+could change nothing (the code was already correct — the gap was the
+missing human check, not the implementation). `_docs/team/qa-engineer.md`
+and `_docs/process.md` now define a third verdict, NEEDS-HUMAN, for
+criteria observable only in a real rendered browser/device: it blocks
+closing and must be surfaced plainly in any summary, not just left in
+the issue thread as a caveat under a PASS.
+
+## #24/#26 reopened; #33 is the actual fix needed
+Per the decision above, #24 and #26 are reopened rather than left
+closed with a stale PASS — the human check their own acceptance
+criteria called for has now happened and shows the `lang`-attribute
+best-effort fix did not take effect in the browser actually used. No
+further code change belongs on #24/#26 themselves (their scope was
+always best-effort, by design, per the entry above on #24/#26's
+scoping) — the real remaining work is #33, the guaranteed custom
+date-picker fix, which should be prioritized.
+
 ## LAN access is enforced by network boundary, not application code
 `ALLOWED_HOSTS` needs updating from its empty default so LAN requests
 aren't rejected, and the README must carry an explicit warning against
